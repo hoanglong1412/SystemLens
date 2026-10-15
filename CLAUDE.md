@@ -11,6 +11,9 @@ api/         API contract: openapi.yaml (REST) + event schemas (stream). Source 
 backend/     C++20 + CMake. src/ = code, tests/ = API tests + interaction tests
 frontend/    Electron. main/ = main process, preload/ = contextBridge, renderer/ = UI (vanilla JS)
 Tool/        PowerShell helper scripts (work from any current directory)
+  githooks/  git hooks (pre-commit format check), enabled by Tool/setup-hooks.ps1
+  lib/       shared helpers for the check tools
+.claude/     project-only Claude Code settings + hooks (fix-format on Write/Edit)
 ```
 
 ## Commands
@@ -20,6 +23,9 @@ Quick run (PowerShell, from anywhere):
 ```powershell
 Tool\run-backend.ps1    # configure + build Debug + run backend (extra args are passed to the exe)
 Tool\run-frontend.ps1   # npm install on first run, then start Electron
+Tool\check_utf8.ps1     # check UTF-8 without BOM   (-Path <files>, -Staged, -Fix)
+Tool\check_crlf.ps1     # check CRLF line endings   (-Path <files>, -Staged, -Fix)
+Tool\setup-hooks.ps1    # once per clone: enable Tool/githooks for this repo only
 ```
 
 Backend (MSVC from Visual Studio 2019, generator "Visual Studio 16 2019"). Run from the **repo root**:
@@ -46,6 +52,13 @@ cd frontend && npm install && npm start
 - **Every commit updates `HISTORY.md`** (in the same commit): add an entry at the top with the reason,
   what the commit does, and the relevant user ↔ AI exchanges (requests, decisions, issues found).
   Follow the template at the top of that file. Write it in Vietnamese.
+- **File format: every text file is UTF-8 without BOM + CRLF**, in the working tree and in the repo
+  (`.gitattributes` has `* -text`, so git stores bytes as-is).
+  - Write/Edit: the project hook `.claude/hooks/fix-format.ps1` converts the file automatically.
+  - Any other way of changing files (Bash, sed, scripts, `npm install`…): run
+    `Tool\check_utf8.ps1 -Path <file> -Fix` and `Tool\check_crlf.ps1 -Path <file> -Fix`.
+  - Before reporting results to the user, run both tools (no `-Fix`) and make sure they exit 0.
+  - The git pre-commit hook shows a Yes/No dialog listing invalid staged files; it never auto-fixes.
 - **No new tooling/installs without asking first** (compilers, extensions, global packages, vcpkg ports).
 - Code quality is reviewed manually: no linters/formatters in the pipeline.
 - Frontend is tested manually. Backend has two test suites:
