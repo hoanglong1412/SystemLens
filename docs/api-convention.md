@@ -42,7 +42,7 @@ không phải tính năng của sản phẩm. Nó được đánh dấu rõ ở 
 - **Đơn vị** ghi rõ trong tên field: `...Bytes`, `...Ms`, `...Percent`. Thời gian dùng epoch milliseconds (`...AtMs`).
 - **Thành công:** status `2xx`, `Content-Type: application/json`, body là chính resource (không bọc envelope).
   ```json
-  { "message": "hello client" }
+  { "message": "@@Hello world@@" }
   ```
 - **Lỗi:** status `4xx/5xx`, `Content-Type: application/problem+json` theo [RFC 7807](https://www.rfc-editor.org/rfc/rfc7807):
   ```json
@@ -82,7 +82,8 @@ Mẫu tham chiếu: toàn bộ chuỗi file `SampleHello*` / `sampleHelloApi.js`
 
 ## Checklist thêm API mới
 
-1. [ ] Khai báo path, schema và error response trong `api/openapi.yaml` (user duyệt).
+1. [ ] Khai báo path, schema và error response trong `api/openapi.yaml` (user duyệt), thêm 1 dòng vào
+   bảng [api-reference.md](api-reference.md).
 2. [ ] Viết service interface và implementation.
 3. [ ] Viết controller, rồi đăng ký trong `Application::registerControllers()`.
 4. [ ] Thêm file `.cpp` vào `backend/CMakeLists.txt` (và `tests/CMakeLists.txt`).

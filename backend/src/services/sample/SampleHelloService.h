@@ -1,6 +1,6 @@
 /**
  * @file    SampleHelloService.h
- * @brief   [SAMPLE API] Default ISampleHelloService: always greets with "hello client".
+ * @brief   [SAMPLE API] Default ISampleHelloService: always greets with "@@Hello world@@".
  */
 #pragma once
 
@@ -12,7 +12,7 @@ class SampleHelloService final : public ISampleHelloService
 {
 public:
     /** Greeting returned by getGreeting(). */
-    static constexpr const char* kGreeting = "hello client 2222";
+    static constexpr const char* kGreeting = "@@Hello world@@";
 
     /**
      * @brief Get the fixed greeting.
