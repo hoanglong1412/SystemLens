@@ -1,0 +1,23 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "backend: configure",
+      "type": "shell",
+      "command": "cmake",
+      "args": ["-S", "backend", "-B", "backend/build", "-G", "Visual Studio 16 2019", "-A", "x64"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    },
+    {
+      "label": "backend: build (Debug)",
+      "type": "shell",
+      "command": "cmake",
+      "args": ["--build", "backend/build", "--config", "Debug"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "dependsOn": "backend: configure",
+      "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": ["$msCompile"]
+    }
+  ]
+}

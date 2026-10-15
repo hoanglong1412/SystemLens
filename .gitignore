@@ -1,0 +1,30 @@
+# ---- C++ / CMake build output ----
+build/
+out/
+CMakeUserPresets.json
+*.exe
+*.pdb
+*.ilk
+*.obj
+*.lib
+*.exp
+*.tlog
+
+# ---- Visual Studio / VS Code local state ----
+.vs/
+*.user
+*.suo
+.vscode/ipch/
+.vscode/browse.vc.db*
+
+# ---- Node / Electron ----
+node_modules/
+dist/
+npm-debug.log*
+
+# ---- Logs ----
+*.log
+
+# ---- OS ----
+.DS_Store
+Thumbs.db

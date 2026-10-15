@@ -1,0 +1,6 @@
+{
+  "cmake.sourceDirectory": "${workspaceFolder}/backend",
+  "cmake.buildDirectory": "${workspaceFolder}/backend/build",
+  "cmake.generator": "Visual Studio 16 2019",
+  "cmake.configureOnOpen": false
+}
