@@ -19,6 +19,34 @@ Mẫu entry:
 - AI: đề xuất / kết quả / vấn đề phát hiện
 -->
 
+## 2026-10-16 — Tài liệu Spec → HLD → LLD, API reference, greeting "@@Hello world@@"
+
+**Lý do:** Hoàn thiện chuỗi tài liệu thiết kế (spec tổng → HLD → LLD) và bảng tra cứu API; đồng bộ greeting
+mới user đặt giữa contract, code, test và tài liệu.
+
+**Nội dung:**
+- `docs/SystemLens_spec.md` (mới, v0.2): spec tổng của dự án — tính năng + trạng thái, FR-COM/FR-SMP, NFR,
+  acceptance criteria (Given/When/Then), traceability, vấn đề đã biết, lịch sử spec.
+- `docs/high-level-design.md`: component diagram đánh số ①–⑨ kèm bảng bước; sequence Startup / Request flow
+  tách FE/BE bằng `box` màu và có bảng bước (khớp `autonumber`); mục Shutdown đổi sang sequence, bỏ actor
+  "Người dùng / OS".
+- `docs/lld/backend-lld.md`, `docs/lld/frontend-lld.md` (mới): class diagram, đặc tả thành phần, threading,
+  lỗi/exit code, IPC, pipeline ApiClient, công thức thêm API.
+- `docs/api-reference.md` (mới): mỗi API một dòng, tóm tắt từ `api/openapi.yaml`; checklist trong
+  `api-convention.md` thêm bước cập nhật file này.
+- Greeting đổi thành `"@@Hello world@@"` (user) ở contract, `SampleHelloService`, API test và tài liệu.
+- `CLAUDE.md` chuyển phần Layout/Commands sang `README.md` (user), thêm rule "Spec first".
+
+**Trao đổi user ↔ AI:**
+- User yêu cầu: đánh số component diagram, tách xử lý FE/BE trong sequence, đổi lifecycle sang sequence,
+  thêm 2 LLD; sau đó yêu cầu thêm spec tổng `SystemLens_spec` (không chia file theo tính năng); thêm bảng bước
+  cho mục 3, 4; bỏ "Người dùng / OS" ở mục 5; thêm file mô tả API dạng bảng.
+- Trước khi commit, AI phát hiện đợt thay "hello client" → "@@Hello world@@" gây 3 lỗi: `openapi.yaml` sai cú
+  pháp YAML (plain scalar không được bắt đầu bằng `@`), API test mong đợi `"@@Hello world@@222"` nên fail, và
+  entry HISTORY đã commit bị sửa. User chọn sửa trước khi commit: đặt greeting trong dấu nháy, test khớp
+  greeting mới, trả HISTORY cũ về nguyên trạng, cập nhật spec I-1 thành "Đã xử lý".
+- Kiểm thử: 10/10 test backend pass; 9 chart Mermaid (HLD + 2 LLD) render OK; định dạng toàn repo hợp lệ.
+
 ## 2026-10-16 — Thêm OpenSpec (commands, skills, config) với định dạng UTF-8 + CRLF
 
 **Lý do:** User cài OpenSpec vào dự án; các file sinh ra đang dùng LF nên vi phạm rule định dạng của repo.

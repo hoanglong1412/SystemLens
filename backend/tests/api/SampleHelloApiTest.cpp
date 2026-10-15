@@ -85,7 +85,7 @@ TEST(SampleHelloApiTest, ReturnsHelloClientWithValidToken)
     ASSERT_TRUE(res) << "request failed";
     EXPECT_EQ(res->status, 200);
     EXPECT_EQ(res->get_header_value("Content-Type"), "application/json");
-    EXPECT_EQ(nlohmann::json::parse(res->body), (nlohmann::json{{"message", "hello client222"}}));
+    EXPECT_EQ(nlohmann::json::parse(res->body), (nlohmann::json{{"message", "@@Hello world@@"}}));
 }
 
 TEST(SampleHelloApiTest, RejectsMissingToken)
