@@ -6,7 +6,7 @@
       "type": "cppvsdbg",
       "request": "launch",
       "program": "${workspaceFolder}/backend/build/Debug/systemlens-backend.exe",
-      "args": [],
+      "args": ["--dev", "--port", "8765"],
       "cwd": "${workspaceFolder}/backend",
       "stopAtEntry": false,
       "console": "integratedTerminal",

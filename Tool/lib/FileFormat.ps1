@@ -26,6 +26,7 @@ function Get-TargetFiles {
     return @(git -C $script:RepoRoot -c core.quotepath=off ls-files -co --exclude-standard)
 }
 
+# Converts a path returned by Get-TargetFiles into an absolute path.
 function Get-FullPath([string] $RelPath) {
     # Files on another drive stay absolute after GetRelativePath.
     if ([System.IO.Path]::IsPathRooted($RelPath)) { return $RelPath }
@@ -52,6 +53,8 @@ function Read-FileBytes {
     return $ms.ToArray()
 }
 
+# Returns $true for files that must not be checked as text: known binary extension,
+# or a NUL byte in the first 8 KB (text files never contain NUL).
 function Test-IsBinary {
     param([string] $RelPath, [byte[]] $Bytes)
 
