@@ -1,0 +1,16 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug backend",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/backend/build/Debug/systemlens-backend.exe",
+      "args": [],
+      "cwd": "${workspaceFolder}/backend",
+      "stopAtEntry": false,
+      "console": "integratedTerminal",
+      "preLaunchTask": "backend: build (Debug)"
+    }
+  ]
+}
