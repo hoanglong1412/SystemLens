@@ -19,6 +19,42 @@ Mẫu entry:
 - AI: đề xuất / kết quả / vấn đề phát hiện
 -->
 
+## 2026-10-15 — Core giao tiếp FE ↔ BE + sample API "hello client" + coding convention
+
+**Lý do:** Dựng khung giao tiếp Frontend ↔ Backend mà mọi API sau này sẽ tuân theo, chứng minh end-to-end
+bằng một sample API, và thống nhất quy chuẩn code / API / tài liệu thiết kế.
+
+**Nội dung:**
+- Contract `api/openapi.yaml`: `GET /api/v1/sample/hello` (tag `sample`), bearer auth, schema `Problem` (RFC 7807).
+- Backend (C++20, deps qua CMake FetchContent: cpp-httplib 0.18.3, nlohmann/json 3.12.0, googletest 1.15.2):
+  - `HttpServer`: bind 127.0.0.1, auth bearer token, CORS cho renderer `file://`, 404/500 → problem+json.
+  - Layer: `IController` / `IRouteRegistry` → `SampleHelloController` → `ISampleHelloService` / `SampleHelloService`.
+  - `AppConfig` (`--port`, `--dev`, env `SYSTEMLENS_TOKEN`), `Application` (composition root, dòng handshake
+    `SYSTEMLENS_READY {"port":n}`, tự thoát khi stdin đóng).
+  - Option CMake `SYSTEMLENS_ENABLE_SAMPLE_API`, `SYSTEMLENS_BUILD_TESTS`.
+  - Tests: 6 API test (200, 401 thiếu/sai token, CORS preflight, 404, 500) + 4 interaction test (gmock).
+- Frontend: `BackendProcess` (spawn backend, token ngẫu nhiên, chờ READY, dừng khi quit), IPC
+  `backend:getConfig` qua preload, `ApiClient` (token, timeout, ApiError), `sampleHelloApi.js`, UI hiển thị
+  "hello client" hoặc lỗi.
+- Tài liệu: `docs/high-level-design.md` (Mermaid: component, startup, request flow, lifecycle),
+  `docs/api-convention.md`, `docs/coding-convention.md`; `CLAUDE.md` thêm mục Coding convention.
+- Tool: `run-backend.ps1` mặc định `--dev --port 8765`, thêm `run-backend-tests.ps1`; F5 chạy với `--dev`.
+
+**Trao đổi user ↔ AI:**
+- User yêu cầu: core giao tiếp FE ↔ BE, test API trả "hello client" có naming nhận biết là test, quy chuẩn
+  cho API sau này, coding convention (header file, header function, comment chỗ khó, clean code).
+- User chọn: FetchContent (không cài vcpkg), cpp-httplib (WebSocket để ADR sau), dựng GoogleTest ngay,
+  comment tiếng Anh.
+- User yêu cầu thêm tài liệu high level design mô tả giao tiếp FE ↔ BE, chart bằng Mermaid; và không cần nhắc lại
+  rule UTF-8/CRLF trong plan vì đã có hook tự động.
+- User yêu cầu đổi tên `test API` thành `sample API`: URL `/api/v1/sample/*`, tag `sample`, thư mục `sample/`,
+  prefix `Sample`/`sample`, option CMake `SYSTEMLENS_ENABLE_SAMPLE_API` (tránh nhầm với test suite thật).
+- Trạng thái lúc commit: user sửa greeting thành "hello client 2222" để thử, nên API test
+  `SampleHelloApiTest.ReturnsHelloClientWithValidToken` fail (9/10 pass); sẽ trả về "hello client" ở commit sau.
+  Phần mock data cho FE (Prism từ OpenAPI) đã thống nhất thiết kế nhưng tạm pending.
+- Kiểm thử (trước khi đổi greeting): 10/10 test pass; curl dev mode trả `{"message":"hello client"}`; Electron hiển thị "hello client";
+  đóng app hoặc kill Electron cưỡng bức → backend tự thoát; thiếu backend exe → UI hiện lỗi rõ ràng.
+
 ## 2026-10-15 — Enforce định dạng file UTF-8 (không BOM) + CRLF
 
 **Lý do:** Thống nhất định dạng cho mọi file được commit: UTF-8 không BOM và CRLF, ở cả repo lẫn working tree.

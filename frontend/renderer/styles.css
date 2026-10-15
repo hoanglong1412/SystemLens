@@ -1,3 +1,7 @@
+/*
+ * File : styles.css
+ * Brief: Global styles of the renderer.
+ */
 body {
   margin: 0;
   height: 100vh;
@@ -7,4 +11,9 @@ body {
   font-family: "Segoe UI", sans-serif;
   background: #1e1e1e;
   color: #e0e0e0;
+}
+
+.error {
+  color: #f48771;
+  font-size: 1.1rem;
 }
