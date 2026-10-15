@@ -19,6 +19,20 @@ Mẫu entry:
 - AI: đề xuất / kết quả / vấn đề phát hiện
 -->
 
+## 2026-10-16 — Thêm OpenSpec (commands, skills, config) với định dạng UTF-8 + CRLF
+
+**Lý do:** User cài OpenSpec vào dự án; các file sinh ra đang dùng LF nên vi phạm rule định dạng của repo.
+
+**Nội dung:**
+- Thêm `.claude/commands/opsx/*.md` (apply, archive, explore, propose, sync, update),
+  `.claude/skills/openspec-*/SKILL.md` (6 skill) và `openspec/config.yaml` (schema `spec-driven`).
+- Chuyển cả 13 file từ LF sang CRLF (đã là UTF-8 không BOM) bằng `Tool\check_crlf.ps1 -Fix`; không sửa nội dung.
+
+**Trao đổi user ↔ AI:**
+- AI phát hiện 13 file OpenSpec (chưa track) sai định dạng CRLF khi kiểm tra toàn repo và hỏi cách xử lý.
+- User yêu cầu chỉnh đúng định dạng và commit riêng phần OpenSpec trước, các thay đổi còn lại commit sau.
+- Ghi chú: dự án dùng spec Markdown (`docs/SystemLens_spec.md`), chưa dùng quy trình change của OpenSpec.
+
 ## 2026-10-15 — Core giao tiếp FE ↔ BE + sample API "hello client" + coding convention
 
 **Lý do:** Dựng khung giao tiếp Frontend ↔ Backend mà mọi API sau này sẽ tuân theo, chứng minh end-to-end
