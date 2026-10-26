@@ -3,7 +3,7 @@
  * @brief   [SAMPLE API] Service interface behind GET /api/v1/sample/hello.
  *
  * Exists only to exercise the FE <-> BE plumbing and to serve as the reference
- * example of the Controller -> Service layering. Interface so tests can mock it.
+ * example of the Controller -> Service layering. Interface so the implementation can be swapped.
  */
 #pragma once
 

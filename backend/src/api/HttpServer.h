@@ -8,7 +8,7 @@
  *  - CORS headers so the Electron renderer (origin "null", file://) can call the API,
  *  - converting exceptions and unknown routes into RFC 7807 problem responses.
  *
- * cpp-httplib types are only forward-declared here so that controllers and tests
+ * cpp-httplib types are only forward-declared here so that controllers
  * do not depend on the HTTP library.
  */
 #pragma once
@@ -68,9 +68,6 @@ public:
      * @pre bind() succeeded.
      */
     void listen();
-
-    /** @brief Block until listen() is accepting connections (used by tests that run listen() on a thread). */
-    void waitUntilReady() const;
 
     /** @brief Ask listen() to return. Safe to call from any thread, and more than once. */
     void stop();

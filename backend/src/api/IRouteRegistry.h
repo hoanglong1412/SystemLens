@@ -2,7 +2,7 @@
  * @file    IRouteRegistry.h
  * @brief   Interface used by controllers to register their routes.
  *
- * HttpServer implements it for real traffic; tests implement it to capture handlers.
+ * HttpServer implements it; controllers depend only on this interface, not on the server.
  */
 #pragma once
 

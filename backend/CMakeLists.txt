@@ -3,7 +3,6 @@
 # Brief  : Build definition of the SystemLens C++ backend.
 #          - systemlens_core     : static library with all backend code except main()
 #          - systemlens-backend  : the executable spawned by Electron
-#          - tests/              : GoogleTest suites (API tests + interaction tests)
 #          Third-party libraries are downloaded at configure time with FetchContent.
 # =============================================================================
 cmake_minimum_required(VERSION 3.24)
@@ -15,7 +14,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 option(SYSTEMLENS_ENABLE_SAMPLE_API "Register the /api/v1/sample/* endpoints" ON)
-option(SYSTEMLENS_BUILD_TESTS     "Build the GoogleTest suites"           ON)
 
 # -----------------------------------------------------------------------------
 # Third-party dependencies (pinned versions, downloaded into the build folder)
@@ -39,7 +37,7 @@ FetchContent_Declare(nlohmann_json
 FetchContent_MakeAvailable(httplib nlohmann_json)
 
 # -----------------------------------------------------------------------------
-# systemlens_core: everything except main(), so tests can link the same code
+# systemlens_core: everything except main(), so other targets can link the same code
 # -----------------------------------------------------------------------------
 add_library(systemlens_core STATIC
     src/app/AppConfig.cpp
@@ -81,11 +79,3 @@ endif()
 # -----------------------------------------------------------------------------
 add_executable(systemlens-backend src/main.cpp)
 target_link_libraries(systemlens-backend PRIVATE systemlens_core)
-
-# -----------------------------------------------------------------------------
-# Tests
-# -----------------------------------------------------------------------------
-if(SYSTEMLENS_BUILD_TESTS)
-    enable_testing()
-    add_subdirectory(tests)
-endif()

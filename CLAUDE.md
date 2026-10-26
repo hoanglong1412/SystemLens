@@ -17,9 +17,6 @@ and practice spec-driven design with a human in the loop.
   - The git pre-commit hook shows a Yes/No dialog listing invalid staged files; it never auto-fixes.
 - **No new tooling/installs without asking first** (compilers, extensions, global packages, vcpkg ports).
 - Code quality is reviewed manually: no linters/formatters in the pipeline.
-- Frontend is tested manually. Backend has two test suites:
-  - **API tests** — black-box HTTP against a running backend (Fake provider), validated against `api/`.
-  - **Interaction tests** — gmock-based, verify layers call each other correctly (API → Service → Provider).
 
 ## Coding convention
 

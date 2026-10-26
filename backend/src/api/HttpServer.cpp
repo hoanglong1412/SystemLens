@@ -128,11 +128,6 @@ void HttpServer::listen()
     m_server->listen_after_bind();
 }
 
-void HttpServer::waitUntilReady() const
-{
-    m_server->wait_until_ready();
-}
-
 void HttpServer::stop()
 {
     if (m_server && m_server->is_running())
