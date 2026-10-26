@@ -67,6 +67,10 @@ Request toRequest(const httplib::Request& req)
 
 } // namespace
 
+/**
+ * @brief Create the server and install auth/CORS/error middleware. Does not bind yet.
+ * @param options Host, port and token.
+ */
 HttpServer::HttpServer(HttpServerOptions options)
     : m_options(std::move(options))
     , m_server(std::make_unique<httplib::Server>())
@@ -74,11 +78,18 @@ HttpServer::HttpServer(HttpServerOptions options)
     installMiddleware();
 }
 
+/** @brief Stop the server if still running. */
 HttpServer::~HttpServer()
 {
     stop();
 }
 
+/**
+ * @brief Register a handler (see IRouteRegistry). Must be called before listen().
+ * @param method  HTTP method.
+ * @param path    Exact path.
+ * @param handler Request handler; exceptions it throws become 500 responses.
+ */
 void HttpServer::addRoute(HttpMethod method, const std::string& path, Handler handler)
 {
     // Wrap the controller handler so it works with cpp-httplib types. Exceptions are
@@ -104,6 +115,11 @@ void HttpServer::addRoute(HttpMethod method, const std::string& path, Handler ha
     }
 }
 
+/**
+ * @brief Bind the listening socket.
+ * @return The bound port (the real one when options.port was 0).
+ * @throws std::runtime_error if the address/port cannot be bound.
+ */
 int HttpServer::bind()
 {
     if (m_options.port == 0)
@@ -123,11 +139,16 @@ int HttpServer::bind()
     return m_options.port;
 }
 
+/**
+ * @brief Serve requests until stop() is called. Blocks the calling thread.
+ * @pre bind() succeeded.
+ */
 void HttpServer::listen()
 {
     m_server->listen_after_bind();
 }
 
+/** @brief Ask listen() to return. Safe to call from any thread, and more than once. */
 void HttpServer::stop()
 {
     if (m_server && m_server->is_running())
@@ -136,6 +157,7 @@ void HttpServer::stop()
     }
 }
 
+/** @brief Install the auth/CORS pre-routing handler and the error/exception handlers. */
 void HttpServer::installMiddleware()
 {
     // Runs before routing: answers CORS preflight and rejects unauthenticated requests,

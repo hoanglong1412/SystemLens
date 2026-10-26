@@ -33,6 +33,10 @@ api::HttpServerOptions toServerOptions(const AppConfig& config)
 
 } // namespace
 
+/**
+ * @brief Build the object graph. Does not open any socket yet.
+ * @param config Parsed startup configuration.
+ */
 Application::Application(AppConfig config)
     : m_config(std::move(config))
     , m_server(toServerOptions(m_config))
@@ -40,6 +44,11 @@ Application::Application(AppConfig config)
     registerControllers();
 }
 
+/**
+ * @brief Bind, announce readiness and serve until shutdown.
+ * @return Process exit code (0 on normal shutdown).
+ * @throws std::runtime_error if the server cannot bind.
+ */
 int Application::run()
 {
     const int port = m_server.bind();
@@ -66,6 +75,7 @@ int Application::run()
     return 0;
 }
 
+/** @brief Create every controller and register its routes on the server. */
 void Application::registerControllers()
 {
     // Add new controllers here: create the service(s), the controller, then register its routes.
@@ -80,6 +90,10 @@ void Application::registerControllers()
     }
 }
 
+/**
+ * @brief Print the READY handshake line to stdout.
+ * @param port Bound port.
+ */
 void Application::announceReady(int port) const
 {
     // std::endl flushes: the parent waits for this exact line before using the API.
@@ -87,6 +101,7 @@ void Application::announceReady(int port) const
     std::cerr << "[Application] listening on http://127.0.0.1:" << port << std::endl;
 }
 
+/** @brief Start the thread that stops the server when stdin closes (parent process exited). */
 void Application::startParentWatchdog()
 {
     m_parentWatchdog = std::thread([this] {

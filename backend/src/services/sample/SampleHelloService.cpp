@@ -6,6 +6,10 @@
 
 namespace systemlens::services::sample {
 
+/**
+ * @brief Get the fixed greeting.
+ * @return kGreeting.
+ */
 std::string SampleHelloService::getGreeting() const
 {
     return kGreeting;

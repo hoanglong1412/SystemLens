@@ -34,13 +34,6 @@ inline constexpr const char* kUsage =
     "  --dev       Disable authentication (development only)\n"
     "Environment: SYSTEMLENS_TOKEN = bearer token (required unless --dev)\n";
 
-/**
- * @brief Build the configuration from argv and the environment.
- * @param argc Argument count from main().
- * @param argv Argument vector from main().
- * @return Parsed configuration.
- * @throws std::invalid_argument on unknown/invalid arguments or a missing token outside dev mode.
- */
 AppConfig parseAppConfig(int argc, const char* const argv[]);
 
 } // namespace systemlens::app

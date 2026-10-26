@@ -4,7 +4,7 @@ Windows task manager clone. Learning project: the owner wants to understand OS i
 and practice spec-driven design with a human in the loop.
 
 ## Rules
-- **Spec first** Mỗi công việc cần thực hiện update các file document trước khi code
+- **Spec first** Update document and review before coding
 - **Every commit updates `HISTORY.md`** (in the same commit): add an entry at the top with the reason,
   what the commit does, and the relevant user ↔ AI exchanges (requests, decisions, issues found).
   Follow the template at the top of that file. Write it in Vietnamese.
@@ -20,11 +20,10 @@ and practice spec-driven design with a human in the loop.
 
 ## Coding convention
 
-Full details and header templates: [docs/coding-convention.md](docs/coding-convention.md). Comments are in English.
-
 1. **File header comment** on every file: file name + what the file contains / is responsible for.
 2. **Function header comment** on every function: what it does, params, return value, errors thrown
-   (C++: Doxygen at the declaration in the `.h`; JS: JSDoc).
+   (C++: Doxygen at the declaration in the `.cpp`; JS: JSDoc; do not comment header function in the `.h`,
+   except pure virtual interface functions, which have no `.cpp` and keep their comment in the `.h`).
 3. **Comment non-obvious code**: explain *why* (reason, constraint, pitfall), not *what*.
 4. **Clean, maintainable, extensible code**: single responsibility, depend on interfaces injected via
    constructor, respect the layering (HttpServer → Controller → Service → Provider), no magic numbers,
