@@ -19,6 +19,28 @@ Mẫu entry:
 - AI: đề xuất / kết quả / vấn đề phát hiện
 -->
 
+## 2026-10-27 — Tạm gỡ bỏ test backend để tái cấu trúc core và tài liệu
+
+**Lý do:** User muốn tái cấu trúc hệ thống, làm xong phần core và tài liệu trước rồi mới làm test, nên tạm
+gỡ toàn bộ test hiện có.
+
+**Nội dung:**
+- Xoá thư mục `backend/tests/` (API test, interaction test gmock, `FakeRouteRegistry`) và script
+  `Tool/run-backend-tests.ps1`.
+- `backend/CMakeLists.txt`: bỏ option `SYSTEMLENS_BUILD_TESTS`, khối `enable_testing()` / `add_subdirectory(tests)`
+  và các comment nhắc tới test.
+- `backend/src`: xoá `HttpServer::waitUntilReady()` (chỉ test dùng); sửa comment nhắc tới test trong
+  `HttpServer.h`, `IController.h`, `IRouteRegistry.h`, `ISampleHelloService.h` (vẫn giữ các interface).
+- `README.md`: bỏ `googletest`, lệnh `run-backend-tests.ps1` và `ctest`. `CLAUDE.md`: bỏ mục mô tả 2 bộ test.
+
+**Trao đổi user ↔ AI:**
+- User yêu cầu review `CLAUDE.md` và `README.md` (chỉ đọc 2 file); AI đưa danh sách điểm cần sửa/bổ sung.
+- User yêu cầu xoá `backend/tests` và thông tin liên quan tới test. AI xoá, sửa CMake/README/CLAUDE.md và báo
+  còn sót `waitUntilReady` cùng các comment trong `backend/src`; user chọn dọn luôn.
+- User tự bỏ dòng rule "No automated tests for now" mà AI thêm vào `CLAUDE.md`.
+- Kiểm thử: build Debug bằng `Tool\run-backend.ps1` không lỗi/warning; backend lên port 8765,
+  `GET /api/v1/sample/hello` trả `{"message":"@@Hello world@@"}`.
+
 ## 2026-10-16 — Tài liệu Spec → HLD → LLD, API reference, greeting "@@Hello world@@"
 
 **Lý do:** Hoàn thiện chuỗi tài liệu thiết kế (spec tổng → HLD → LLD) và bảng tra cứu API; đồng bộ greeting

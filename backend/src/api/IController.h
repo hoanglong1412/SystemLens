@@ -18,7 +18,7 @@ public:
 
     /**
      * @brief Register all routes handled by this controller.
-     * @param registry Target registry (HttpServer in production, a fake in tests).
+     * @param registry Target registry (normally the HttpServer).
      */
     virtual void registerRoutes(IRouteRegistry& registry) = 0;
 };
