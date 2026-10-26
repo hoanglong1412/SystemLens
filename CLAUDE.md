@@ -4,13 +4,7 @@ Windows task manager clone. Learning project: the owner wants to understand OS i
 and practice spec-driven design with a human in the loop.
 
 ## Rules
-
-- **Spec first.** Every new feature starts by updating `docs/SystemLens_spec.md` (feature status, FR/NFR with
-  IDs, acceptance criteria, traceability), then the contract (`api/`), then HLD/LLD, then code. When behavior
-  changes, keep spec → HLD → LLD consistent with the code (one master spec, not one file per feature).
-- **Contract first.** Never change `api/` without an approved ADR / explicit user approval. BE and FE
-  are developed in parallel against the contract.
-- **Human gates:** ADRs, API contract changes and merges to `main` need the user's approval.
+- **Spec first** Mỗi công việc cần thực hiện update các file document trước khi code
 - **Every commit updates `HISTORY.md`** (in the same commit): add an entry at the top with the reason,
   what the commit does, and the relevant user ↔ AI exchanges (requests, decisions, issues found).
   Follow the template at the top of that file. Write it in Vietnamese.
@@ -21,9 +15,6 @@ and practice spec-driven design with a human in the loop.
     `Tool\check_utf8.ps1 -Path <file> -Fix` and `Tool\check_crlf.ps1 -Path <file> -Fix`.
   - Before reporting results to the user, run both tools (no `-Fix`) and make sure they exit 0.
   - The git pre-commit hook shows a Yes/No dialog listing invalid staged files; it never auto-fixes.
-- **API work follows [docs/api-convention.md](docs/api-convention.md)** (URLs, JSON, problem+json errors, auth,
-  `/api/v1/sample/*` + `Sample*`/`sample*` naming for sample (reference/plumbing) APIs, checklist for a new API).
-  Architecture: [docs/high-level-design.md](docs/high-level-design.md) (diagrams in Mermaid).
 - **No new tooling/installs without asking first** (compilers, extensions, global packages, vcpkg ports).
 - Code quality is reviewed manually: no linters/formatters in the pipeline.
 - Frontend is tested manually. Backend has two test suites:
