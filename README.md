@@ -8,21 +8,11 @@ A Windows task manager (inspired by MiTeC Task Manager DeLuxe) built as a learni
 ## Layout
 
 ```
-docs/        SystemLens_spec.md (master spec: features, FR/NFR, acceptance, traceability),
-             high-level-design.md, lld/backend-lld.md, lld/frontend-lld.md,
-             api-reference.md (one table row per API, mirrors api/openapi.yaml — update together),
-             api-convention.md, coding-convention.md, ADRs (docs/adr)
+docs/        Document
 api/         API contract: openapi.yaml (REST). Source of truth for BE & FE.
 backend/     C++20 + CMake (deps via FetchContent: cpp-httplib, nlohmann/json, googletest)
-  src/app/       AppConfig (args/env), Application (composition root, READY handshake, stdin watchdog)
-  src/api/       HttpServer (auth/CORS/errors), ApiResponse (ok/problem), IController, controllers per area
-  src/services/  business logic behind I<Name>Service interfaces
-  tests/         api/ (HTTP against a real HttpServer), interaction/ (gmock), support/ (fakes)
-frontend/    Electron. main/ = main process + BackendProcess (spawns backend), preload/ = window.systemlens,
-             renderer/ = UI; renderer/api/ = ApiClient + one module per API area
+frontend/    UI
 Tool/        PowerShell helper scripts (work from any current directory)
-  githooks/  git hooks (pre-commit format check), enabled by Tool/setup-hooks.ps1
-  lib/       shared helpers for the check tools
 .claude/     project-only Claude Code settings + hooks (fix-format on Write/Edit)
 ```
 
