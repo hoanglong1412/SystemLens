@@ -29,30 +29,12 @@ inline constexpr const char* kReadyPrefix = "SYSTEMLENS_READY ";
 class Application
 {
 public:
-    /**
-     * @brief Build the object graph. Does not open any socket yet.
-     * @param config Parsed startup configuration.
-     */
     explicit Application(AppConfig config);
-
-    /**
-     * @brief Bind, announce readiness and serve until shutdown.
-     * @return Process exit code (0 on normal shutdown).
-     * @throws std::runtime_error if the server cannot bind.
-     */
     int run();
 
 private:
-    /** @brief Create every controller and register its routes on the server. */
     void registerControllers();
-
-    /**
-     * @brief Print the READY handshake line to stdout.
-     * @param port Bound port.
-     */
     void announceReady(int port) const;
-
-    /** @brief Start the thread that stops the server when stdin closes (parent process exited). */
     void startParentWatchdog();
 
     AppConfig m_config;

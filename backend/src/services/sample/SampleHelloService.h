@@ -14,10 +14,6 @@ public:
     /** Greeting returned by getGreeting(). */
     static constexpr const char* kGreeting = "@@Hello world@@";
 
-    /**
-     * @brief Get the fixed greeting.
-     * @return kGreeting.
-     */
     std::string getGreeting() const override;
 };
 

@@ -19,6 +19,24 @@ Mẫu entry:
 - AI: đề xuất / kết quả / vấn đề phát hiện
 -->
 
+## 2026-10-27 — Chuyển comment header của hàm C++ từ .h sang .cpp
+
+**Lý do:** User muốn file `.h` chỉ còn khai báo; comment mô tả hàm (Doxygen) đặt ở phần cài đặt trong `.cpp`.
+
+**Nội dung:**
+- Chuyển nguyên văn comment hàm (chỉ bỏ thụt lề) từ `.h` sang `.cpp` cho `ApiResponse`, `HttpServer`,
+  `SampleHelloController`, `AppConfig`, `Application`, `SampleHelloService`.
+- Giữ ở `.h`: comment hàm pure virtual của `IController`, `IRouteRegistry`, `ISampleHelloService` (không có
+  `.cpp`), comment file header, struct, hằng số và biến thành viên.
+- `CLAUDE.md`: rule comment hàm đổi thành Doxygen ở `.cpp`, không comment hàm trong `.h` (user sửa), kèm ngoại
+  lệ cho hàm pure virtual của interface (AI thêm theo yêu cầu); user bỏ dòng link tới `docs/coding-convention.md`.
+
+**Trao đổi user ↔ AI:**
+- User yêu cầu chuyển toàn bộ comment header của hàm từ `.h` sang `.cpp`, không đổi nội dung.
+- AI hỏi 2 điểm: interface pure virtual không có `.cpp` → user chọn giữ ở `.h`; rule cũ trong `CLAUDE.md`
+  ngược với yêu cầu → user tự sửa rule, sau đó yêu cầu AI bổ sung ngoại lệ cho interface.
+- Kiểm thử: build Debug backend không lỗi/warning; định dạng các file sửa hợp lệ.
+
 ## 2026-10-27 — Tạm gỡ bỏ test backend để tái cấu trúc core và tài liệu
 
 **Lý do:** User muốn tái cấu trúc hệ thống, làm xong phần core và tài liệu trước rồi mới làm test, nên tạm
