@@ -19,6 +19,36 @@ Mẫu entry:
 - AI: đề xuất / kết quả / vấn đề phát hiện
 -->
 
+## 2026-10-28 — Tạo lại bộ tài liệu docs/ (yêu cầu, HLD, LLD, API schema) theo source hiện tại
+
+**Lý do:** Bộ docs cũ đã bị xoá để tái cấu trúc. User muốn bộ tài liệu mới dễ đọc, dễ trace từ yêu cầu → design
+→ API → source, và chỉ ghi theo nội dung source code hiện tại (không tự thêm yêu cầu hay đề xuất).
+
+**Nội dung:**
+- `docs/README.md`: mục lục, quy ước ID (`FR-`, `UC-`, `NFR-`, `HLD-`, `LLD-`, `operationId`), ma trận traceability.
+- `docs/requirements/functional-requirements.md`: `FR-SMP-01` / `UC-SMP-01` (hiển thị greeting từ sample API),
+  bảng thao tác UI, template cho FR mới.
+- `docs/requirements/non-functional-requirements.md`: 3 NFR do user đưa ra — NFR-01 API contract là source of
+  truth (Implemented), NFR-02 tách biệt IPC FE ↔ BE (Implemented), NFR-03 BE độc lập OS (Not implemented, chỉ
+  liệt kê các chỗ đang phụ thuộc Windows); kèm bằng chứng trong code và template.
+- `docs/design/high-level-design.md`: HLD-01 component diagram, HLD-02 luồng UI → BE → hiển thị, HLD-03 start app,
+  HLD-04 end app, HLD-05 gọi 1 API. Mọi sequence dùng `autonumber` và có bảng mô tả từng bước.
+- `docs/design/lld/`: `_template.md`, LLD-01 vòng đời backend, LLD-02 pipeline request API, LLD-03 sample hello;
+  mỗi LLD có sequence mức hàm, bảng hàm (params/return/lỗi) và flowchart các hàm có rẽ nhánh.
+- `docs/api-schema.md`: bảng API sinh từ `api/openapi.yaml` (YAML là chuẩn khi lệch); `docs/api-convention.md`:
+  quy ước API đang áp dụng trong code (đường dẫn này đang được `openapi.yaml`, `ApiResponse.h`, `apiClient.js` tham chiếu).
+- `docs/ui-design/.gitkeep`: thư mục chờ file thiết kế Figma.
+
+**Trao đổi user ↔ AI:**
+- User yêu cầu: file yêu cầu chức năng/phi chức năng, HLD, LLD, API schema dạng bảng, thư mục Figma; diagram
+  bằng Mermaid, sequence đánh số kèm bảng; tài liệu dễ mapping; không tự thêm yêu cầu; file khác cần thiết thì hỏi.
+- AI hỏi, user chọn: FR ghi lại chức năng sample hiện có; NFR chỉ gồm 3 mục của user; tạo thêm `docs/README.md`
+  và `docs/api-convention.md` (không tạo `coding-convention.md`); viết bằng tiếng Anh.
+- User bổ sung: cây thư mục trong tài liệu dùng ký hiệu `├──`, `└──`, `│`.
+- Trước khi commit, AI phát hiện commit "Move C++ function header comments" đã xoá `HttpServer::waitUntilReady()` và
+  đổi vài comment liên quan tới test; đã cập nhật LLD-02, LLD-03 cho khớp.
+- Kiểm tra: UTF-8/CRLF hợp lệ, toàn bộ link/anchor trong `docs/` đúng, 34 diagram Mermaid render không lỗi.
+
 ## 2026-10-27 — Chuyển comment header của hàm C++ từ .h sang .cpp
 
 **Lý do:** User muốn file `.h` chỉ còn khai báo; comment mô tả hàm (Doxygen) đặt ở phần cài đặt trong `.cpp`.
