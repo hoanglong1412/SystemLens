@@ -1,0 +1,22 @@
+/*
+ * File : hello.css
+ * Brief: Sample hello screen: one message centred in the content slot.
+ */
+.view-host {
+  height: 100%;
+}
+
+.view-host--hidden {
+  display: none;
+}
+
+.hello {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.hello__message {
+  margin: 0;
+}

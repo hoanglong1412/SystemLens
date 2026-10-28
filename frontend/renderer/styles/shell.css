@@ -1,0 +1,268 @@
+/*
+ * File : shell.css
+ * Brief: App shell shared by every screen: title bar, header, tab bar, content slot, status bar.
+ *        Sizes and offsets follow the Figma frame (1440 x 960).
+ */
+.shell {
+  display: grid;
+  grid-template-rows: 36px 68px 36px minmax(0, 1fr) 36px;
+  height: 100vh;
+}
+
+.shell__content {
+  position: relative;
+  min-height: 0;
+}
+
+/* ---- Title bar ---- */
+.titlebar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding-left: 14px;
+  background: var(--bg-chrome);
+  /* Frameless window: the title bar moves the window (see main.js titleBarStyle). */
+  -webkit-app-region: drag;
+}
+
+.titlebar__title {
+  margin-left: 10px;
+  font-size: 12px;
+  line-height: 15px;
+  color: var(--text-muted);
+}
+
+.titlebar__controls {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  gap: 38px;
+}
+
+.titlebar__controls svg {
+  display: block;
+}
+
+/* ---- Header ---- */
+.header {
+  position: relative;
+  background: var(--bg-app);
+}
+
+.header__machine-icon {
+  position: absolute;
+  top: 12px;
+  left: 16px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 6px;
+  background: var(--bg-raised);
+}
+
+.header__machine {
+  position: absolute;
+  top: 14px;
+  left: 72px;
+}
+
+.header__machine-name {
+  display: flex;
+  align-items: center;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 18px;
+}
+
+.header__info {
+  margin-left: 6px;
+}
+
+.header__machine-details {
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 15px;
+  color: var(--text-muted);
+}
+
+.dot-sep {
+  margin: 0 0.45em;
+}
+
+.quick-stats__info {
+  position: absolute;
+  top: 13px;
+  right: 504px;
+}
+
+.quick-stats {
+  position: absolute;
+  top: 10px;
+  right: 16px;
+  display: grid;
+  grid-template-columns: 120px 112px 112px 112px;
+  grid-template-rows: 22px 22px;
+  gap: 6px 8px;
+}
+
+.chip {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  overflow: hidden;
+  padding: 0 8px;
+  border-radius: 3px;
+  background: var(--bg-raised);
+  font-size: 11px;
+  line-height: 13px;
+}
+
+.chip__fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+}
+
+.chip__label,
+.chip__value {
+  position: relative;
+  white-space: nowrap;
+}
+
+.chip__label {
+  color: var(--text-muted);
+}
+
+.chip__value {
+  font-weight: 600;
+}
+
+.chip--uptime {
+  justify-content: center;
+  background: var(--yellow);
+  color: var(--text-on-yellow);
+  font-weight: 700;
+}
+
+.chip--cpu .chip__fill { background: var(--chip-cpu); }
+.chip--mem .chip__fill { background: var(--chip-mem); }
+.chip--disk .chip__fill { background: var(--chip-disk); }
+
+.chip--network,
+.chip--top {
+  grid-column: span 2;
+}
+
+.chip--network {
+  justify-content: flex-start;
+}
+
+.chip__label--down {
+  margin-left: 14px;
+}
+
+/* ---- Tab bar ---- */
+.tabbar {
+  display: flex;
+  align-items: flex-start;
+  padding: 0 16px;
+  background: var(--bg-chrome);
+  /* Bottom divider; the active tab is drawn over it. */
+  box-shadow: inset 0 -1px 0 var(--border);
+}
+
+.tabbar__tabs {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.tab {
+  position: relative;
+  box-sizing: border-box;
+  height: 32px;
+  padding: 7px 14px 0;
+  font-size: 13px;
+  line-height: 16px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.tab--active {
+  border-radius: 6px 6px 0 0;
+  background: var(--bg-app);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.tab--active::after {
+  content: "";
+  position: absolute;
+  right: 14px;
+  bottom: 0;
+  left: 14px;
+  height: 3px;
+  border-radius: 2px 2px 0 0;
+  background: var(--accent);
+}
+
+.tabbar__actions {
+  display: flex;
+  margin-left: auto;
+  margin-right: 8px;
+}
+
+.tabbar .btn--small {
+  margin-top: 6px;
+}
+
+/* Fixed widths from the design so the buttons keep their place whatever the font metrics. */
+.tabbar__export {
+  width: 110px;
+}
+
+.tabbar .btn--icon {
+  margin: 6px 0 0 16px;
+}
+
+/* ---- Status bar ---- */
+.statusbar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding-left: 18px;
+  background: var(--bg-chrome);
+  box-shadow: inset 0 1px 0 var(--border);
+  font-size: 12px;
+  line-height: 15px;
+  color: var(--text-muted);
+}
+
+.statusbar__dot {
+  width: 8px;
+  height: 8px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: var(--green);
+}
+
+.statusbar__info {
+  margin-left: 6px;
+}
+
+.statusbar__boot {
+  position: absolute;
+  top: 11px;
+  left: 560px;
+}
+
+.statusbar .btn--link {
+  position: absolute;
+  top: 6px;
+  right: 16px;
+  width: 125px;
+}

@@ -1,19 +1,67 @@
 /*
  * File : styles.css
- * Brief: Global styles of the renderer.
+ * Brief: Global styles of the renderer: design tokens (colours from the Figma design) and base rules.
+ *        Screen / component styles live in styles/.
  */
+:root {
+  /* Surfaces */
+  --bg-chrome: #16171a;   /* title bar, tab bar, status bar */
+  --bg-app: #1c1d21;      /* header, content background, active tab */
+  --bg-surface: #232429;  /* sidebar, cards */
+  --bg-raised: #2a2b31;   /* chips, buttons, table header */
+  --bg-plot: #121316;     /* chart and gauge wells */
+  --bg-selected: #22344c; /* selected sidebar resource */
+  --border: #34363d;
+  --grid: #262830;
+
+  /* Text */
+  --text: #e8e9ec;
+  --text-muted: #8e9099;
+  --text-on-yellow: #1a1a1a;
+  --error: #f48771;
+
+  /* Accents and series */
+  --accent: #3d9bff;
+  --green: #2fd27a;
+  --orange: #f28c28;
+  --orange-dim: #e58a2e;
+  --orange-dark: #d9822b;
+  --yellow: #e6d04a;
+  --purple: #b07cf0;
+  --blue: #4aa3f0;
+  --lime: #8bc34a;
+  --idle: #3a3c44;
+
+  /* Quick-stat chip fills */
+  --chip-cpu: #2c654b;
+  --chip-mem: #355574;
+  --chip-disk: #4c603a;
+
+  /* Tooltip */
+  --tooltip-bg: #30323a;
+  --tooltip-border: #46484f;
+  --tooltip-text: #b8bac2;
+}
+
+html,
 body {
   margin: 0;
-  height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  height: 100%;
+}
+
+body {
+  overflow: hidden;
   font-family: "Segoe UI", sans-serif;
-  background: #1e1e1e;
-  color: #e0e0e0;
+  font-size: 12px;
+  background: var(--bg-app);
+  color: var(--text);
+}
+
+button {
+  font-family: inherit;
 }
 
 .error {
-  color: #f48771;
+  color: var(--error);
   font-size: 1.1rem;
 }

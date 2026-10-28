@@ -19,6 +19,35 @@ Mẫu entry:
 - AI: đề xuất / kết quả / vấn đề phát hiện
 -->
 
+## 2026-10-29 — Thêm màn hình Performance › CPU (giá trị cố định theo Figma) và app shell dùng chung
+
+**Lý do:** User muốn có giao diện màn hình CPU giống thiết kế Figma "SystemLens UI" (giá trị fix cứng tạm thời,
+có tooltip), header/footer là phần bất biến để các màn hình sau dùng lại, và một nút chuyển qua lại với màn hình
+sample hello (vẫn là màn hình mặc định).
+
+**Nội dung:**
+- `renderer/shell/`: app shell (title bar, header + quick stats, thanh tab, status bar); màn hình chỉ vẽ vào slot nội dung.
+- `renderer/views/cpu/`: màn hình CPU (sidebar resource + sparkline, LED gauges, biểu đồ % Utilization, top processes,
+  summary, specifications, CPU time breakdown, scheduler activity); toàn bộ số liệu cố định nằm trong `*Mock.js`.
+- `renderer/views/hello/`, `renderer/views/viewSwitcher.js`: màn hình hello và nút toggle chuyển màn hình.
+- `renderer/ui/`: helper DOM/SVG, icon, info icon + tooltip, plot SVG, LED gauge.
+- `renderer/styles/`: CSS theo shell / component / màn hình; `styles.css` giữ design token (màu lấy từ Figma).
+- `main/main.js`: cửa sổ 1440×960 (kích thước frame Figma), title bar tự vẽ + nút cửa sổ native (`titleBarOverlay`).
+- `docs/ui-design/figma.onl` (mới): link file Figma "SystemLens UI" mà màn hình này dựa theo.
+- `evi/` (mới): 2 ảnh so sánh 1440×960 — `figma_cpu_performance.png` (Figma) và `app_cpu_performance.png` (app).
+
+**Trao đổi user ↔ AI:**
+- User: code cứng giao diện theo Figma, có tooltip, chỉ sửa `frontend/`, header/footer dễ tái sử dụng; capture 2 ảnh
+  (Figma và app) vào `evi/` để so sánh, yêu cầu giống 100%; chỉ được đọc Figma.
+- AI: Figma MCP hết lượt gọi (gói Starter) nên đọc thiết kế bằng cách chụp prototype Figma qua Electron có sẵn;
+  đo màu, vị trí, số liệu biểu đồ từ ảnh chụp.
+- AI: thiết kế dùng font Inter (máy không có). User chọn không tải Inter, dùng Segoe UI; sau đó user muốn đổi font
+  trong Figma nhưng AI không sửa được (MCP hết lượt, browser chưa đăng nhập) → user quyết định giữ Figma như hiện tại.
+- AI: kết quả so sánh 90,59% pixel trùng tuyệt đối (93,57% trong ngưỡng sai số màu); phần lệch chủ yếu do khác font
+  và nút toggle (không có trong thiết kế). Không đạt 100%.
+- User: commit phần UI lên nhánh `feature/int_cpu_preformance`, không commit tài liệu; sau đó yêu cầu commit
+  luôn `docs/ui-design/` (link Figma) và `evi/` vào nhánh này.
+
 ## 2026-10-28 — Tạo lại bộ tài liệu docs/ (yêu cầu, HLD, LLD, API schema) theo source hiện tại
 
 **Lý do:** Bộ docs cũ đã bị xoá để tái cấu trúc. User muốn bộ tài liệu mới dễ đọc, dễ trace từ yêu cầu → design

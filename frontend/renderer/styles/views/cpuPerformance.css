@@ -1,0 +1,410 @@
+/*
+ * File : cpuPerformance.css
+ * Brief: Performance > CPU screen. Offsets follow the Figma frame; absolute positions inside a card
+ *        are measured from the card's padding box (design offset - 1px border).
+ */
+.perf {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  height: 100%;
+}
+
+/* ---- Resource sidebar ---- */
+.resources {
+  position: relative;
+  box-sizing: border-box;
+  padding: 8px 0 0 6px;
+  border-right: 1px solid var(--border);
+  background: var(--bg-surface);
+}
+
+.resources__info {
+  position: absolute;
+  z-index: 1;
+  top: 14px;
+  left: 204px;
+}
+
+.resource {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  width: 240px;
+  height: 68px;
+  margin-bottom: 6px;
+  padding-left: 10px;
+  border-radius: 6px;
+}
+
+.resource--selected {
+  border-left: 3px solid var(--accent);
+  background: var(--bg-selected);
+}
+
+.resource__text {
+  margin-left: 12px;
+}
+
+.resource__name {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 18px;
+}
+
+.resource__detail {
+  margin-top: 4px;
+  font-size: 11px;
+  line-height: 13px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* ---- CPU detail panel ---- */
+.cpu {
+  padding: 0 16px 0 20px;
+}
+
+.cpu-header {
+  position: relative;
+  height: 96px;
+}
+
+.cpu-header__title {
+  position: absolute;
+  top: 10px;
+  left: 0;
+  margin: 0;
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 36px;
+}
+
+.cpu-header__model {
+  position: absolute;
+  top: 18px;
+  right: 0;
+  font-size: 15px;
+  line-height: 18px;
+}
+
+.cpu-header__topology {
+  position: absolute;
+  top: 40px;
+  right: 0;
+  font-size: 12px;
+  line-height: 15px;
+  color: var(--text-muted);
+}
+
+.subtabs {
+  position: absolute;
+  top: 62px;
+  left: 0;
+  display: flex;
+  gap: 6px;
+}
+
+/* 15px + 1px border each side: with Segoe UI this gives the design widths (84 / 78px). */
+.subtab {
+  height: 27px;
+  padding: 0 15px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 15px;
+  cursor: pointer;
+}
+
+.subtab--active {
+  border-color: var(--accent);
+  background: var(--bg-raised);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.cpu__row {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.cpu__row--top {
+  grid-template-columns: 168px 612px 340px;
+  height: 284px;
+  margin-top: 8px;
+}
+
+.cpu__row--mid {
+  grid-template-columns: 616px 516px;
+  height: 160px;
+}
+
+.cpu__row--bottom {
+  grid-template-columns: 616px 516px;
+  height: 200px;
+}
+
+/* ---- Live gauges ---- */
+.card--gauges {
+  padding: 7px 0 0 11px;
+}
+
+.gauges {
+  position: absolute;
+  top: 29px;
+  left: 20px;
+  display: flex;
+  gap: 21px;
+}
+
+/* ---- % Utilization ---- */
+.card--utilization {
+  padding: 7px 11px 0;
+}
+
+.chart__top,
+.chart__bottom {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 13px;
+}
+
+.chart__top {
+  margin-bottom: 5px;
+}
+
+.chart__bottom {
+  margin-top: 6px;
+}
+
+.chart__axis,
+.chart__bottom .legend {
+  font-size: 11px;
+  line-height: 13px;
+  color: var(--text-muted);
+}
+
+.chart__bottom .legend {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.chart__plot .plot__area {
+  fill-opacity: 0.28;
+}
+
+.chart__plot--trend .plot__area {
+  fill-opacity: 0.25;
+}
+
+/* ---- Top CPU processes ---- */
+.card--processes {
+  padding: 9px 11px 0;
+}
+
+.card__title--table {
+  margin-bottom: 8px;
+}
+
+.proc {
+  width: 316px;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+  font-size: 11px;
+  line-height: 13px;
+}
+
+.proc th,
+.proc td {
+  height: 22px;
+  padding: 0;
+  box-sizing: border-box;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.proc th {
+  background: var(--bg-raised);
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.proc th:nth-child(1),
+.proc td:nth-child(1) { width: 48px; text-align: right; }
+.proc th:nth-child(2),
+.proc td:nth-child(2) { width: 128px; padding-left: 10px; text-align: left; }
+.proc th:nth-child(3),
+.proc td:nth-child(3) { width: 52px; padding-right: 8px; text-align: right; }
+.proc th:nth-child(4),
+.proc td:nth-child(4) { width: 88px; padding-right: 8px; text-align: right; }
+
+.proc__pid {
+  color: var(--text-muted);
+}
+
+.proc__name--self {
+  color: var(--accent);
+}
+
+/* The CPU % cell background stops 1px short of each row edge, leaving a dark gap between cells. */
+.proc__cpu {
+  border-top: 1px solid transparent;
+  border-bottom: 1px solid transparent;
+  background-clip: padding-box;
+  font-weight: 600;
+}
+
+/* ---- Summary ---- */
+.card--summary {
+  padding: 15px;
+}
+
+.summary__metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 140px);
+  gap: 18px 10px;
+}
+
+.summary__divider {
+  position: absolute;
+  top: 15px;
+  left: 469px;
+  width: 1px;
+  height: 128px;
+  background: var(--border);
+}
+
+.summary__uptime {
+  position: absolute;
+  top: 15px;
+  left: 485px;
+}
+
+.summary__uptime-value {
+  margin-top: 4px;
+  font-size: 20px;
+  line-height: 24px;
+}
+
+.summary__started-label {
+  margin-top: 18px;
+}
+
+.summary__started {
+  margin-top: 4px;
+  font-size: 13px;
+  line-height: 16px;
+}
+
+.summary__info {
+  position: absolute;
+  top: 13px;
+  left: 585px;
+}
+
+/* ---- Specifications ---- */
+.card--spec {
+  padding: 13px 15px 0;
+}
+
+.spec {
+  display: grid;
+  grid-template-columns: 230px 230px;
+  column-gap: 24px;
+  margin-top: 15px;
+}
+
+.spec__row {
+  display: flex;
+  justify-content: space-between;
+  height: 16px;
+  margin-bottom: 10px;
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.spec__label {
+  color: var(--text-muted);
+}
+
+.spec__value {
+  font-weight: 600;
+}
+
+/* ---- CPU time breakdown ---- */
+.card--breakdown {
+  padding: 13px 15px 0;
+}
+
+.breakdown__bar {
+  display: flex;
+  height: 20px;
+  margin-top: 11px;
+  overflow: hidden;
+  border-radius: 3px;
+}
+
+.breakdown__legend {
+  display: flex;
+  margin-top: 10px;
+}
+
+.breakdown__item {
+  display: flex;
+  width: 116px;
+}
+
+.breakdown__swatch {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  margin-right: 6px;
+  border-radius: 2px;
+}
+
+.breakdown__name {
+  font-size: 11px;
+  line-height: 13px;
+  color: var(--text-muted);
+}
+
+.breakdown__percent {
+  margin-top: 2px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 17px;
+}
+
+.breakdown__caption {
+  margin: 10px 0 7px;
+  font-size: 11px;
+  line-height: 13px;
+  color: var(--text-muted);
+}
+
+/* ---- Scheduler activity ---- */
+.card--scheduler {
+  padding: 13px 15px 0;
+}
+
+.scheduler__metrics {
+  display: grid;
+  grid-template-columns: 220px 220px;
+  gap: 18px 24px;
+  margin-top: 15px;
+}
+
+.scheduler__source {
+  position: absolute;
+  top: 175px;
+  left: 15px;
+  font-size: 10px;
+  line-height: 12px;
+  color: var(--text-muted);
+}
