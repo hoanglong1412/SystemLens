@@ -10,74 +10,70 @@ project goes on; sections with no information yet only hold a template and an ex
 
 ```
 docs/
-├── README.md                              this file: index, ID scheme, traceability matrix
-├── api-schema.md                          API contract as tables (generated from api/openapi.yaml)
-├── api-convention.md                      rules every API follows (URL, auth, errors, how to add an API)
-├── requirements/
-│   ├── functional-requirements.md         FR-* and UC-*: use cases and UI operations
-│   └── non-functional-requirements.md     NFR-*: dependency reduction / extensibility rules
-├── design/
-│   ├── high-level-design.md               HLD-*: component diagram and overview flows
-│   └── lld/
-│       ├── _template.md                   template for a new LLD
-│       ├── LLD-01-backend-lifecycle.md    start / handshake / shutdown of the backend process
-│       ├── LLD-02-api-request-pipeline.md one API call from ApiClient to the controller and back
-│       └── LLD-03-sample-hello.md         sample feature: show the greeting from GET /api/v1/sample/hello
-└── ui-design/                             Figma / UI design files (none yet)
+├── README.md                                    this file: index, ID scheme, requirement files, traceability matrix
+├── CLAUDE.md                                    rules for writing documentation
+├── api-schema.md                                API contract as tables (generated from api/openapi.yaml)
+├── api-convention.md                            rules every API follows (URL, auth, errors, how to add an API)
+├── requirements/                                one file per work item (RQ<NNN>_<Name>.md)
+│   └── RQ001_CoreProject.md                     FR, UC, NFR of the project core
+├── design/                                      one folder per requirement file (RQ<NNN>_<Name>/)
+│   └── RQ001_CoreProject/
+│       ├── RQ001_HLD.md                         components, design decisions, how each requirement is met
+│       ├── RQ001_LLD-01-backend-lifecycle.md    start / handshake / shutdown of the backend process
+│       └── RQ001_LLD-02-api-request-pipeline.md one API call end to end, errors, sample greeting feature
+└── ui-design/                                   Figma / UI design files (none yet)
 ```
 
 Source of truth outside `docs/`:
 
 ```
 api/
-└── openapi.yaml                           API contract, source of truth for backend and frontend
+└── openapi.yaml                                 API contract, source of truth for backend and frontend
 ```
 
 ## 2. ID scheme
 
 | Prefix | Meaning | Defined in | Example |
 |---|---|---|---|
-| `FR-<AREA>-NN` | Functional requirement | [functional-requirements.md](requirements/functional-requirements.md) | `FR-SMP-01` |
-| `UC-<AREA>-NN` | Use case realizing an FR | [functional-requirements.md](requirements/functional-requirements.md) | `UC-SMP-01` |
-| `NFR-NN` | Non-functional requirement | [non-functional-requirements.md](requirements/non-functional-requirements.md) | `NFR-01` |
-| `HLD-NN` | Section of the high-level design | [high-level-design.md](design/high-level-design.md) | `HLD-03` |
-| `LLD-NN` | Low-level design of one feature | `design/lld/LLD-NN-*.md` | `LLD-01` |
-| `HLD-NN#n` / `LLD-NN#n` | Step `n` of the numbered sequence diagram in that section | same file, step table | `HLD-03#4` |
+| `RQ<NNN>` | Requirement file = one work item | `requirements/RQ<NNN>_<Name>.md` | `RQ001` |
+| `RQ<NNN>-FR-NN` | Functional requirement of that work item | the RQ file, section 2 | `RQ001-FR-01` |
+| `RQ<NNN>-UC-NN` | Use case realizing an FR | the RQ file, under its FR | `RQ001-UC-01` |
+| `RQ<NNN>-NFR-NN` | Non-functional requirement of that work item | the RQ file, section 3 | `RQ001-NFR-01` |
+| `RQ<NNN>-HLD-NN` | Section of the high-level design of that work item | `design/RQ<NNN>_<Name>/RQ<NNN>_HLD.md` | `RQ001-HLD-03` |
+| `RQ<NNN>-LLD-NN` | Low-level design of one feature of that work item | `design/RQ<NNN>_<Name>/RQ<NNN>_LLD-NN-*.md` | `RQ001-LLD-01` |
+| `<ID> §<section> #<n>` | Step `n` of the numbered sequence diagram in that section | same file, step table | `RQ001-LLD-01 §3.1 #5` |
 | `operationId` | One API endpoint | [api-schema.md](api-schema.md), `api/openapi.yaml` | `getSampleHello` |
-
-Areas currently in use:
-
-| Area | Meaning |
-|---|---|
-| `SMP` | Sample API / sample feature (exists only to prove FE ↔ BE communication) |
 
 Rules:
 - An ID is never reused or renumbered; a removed item keeps its ID with status `Removed`.
-- Every document starts with a metadata table: **Traces to** (upstream items) and **Detailed in** (downstream items).
-- Every numbered sequence diagram (`autonumber`) is followed by a step table whose `#` column matches the numbers.
+- Anchors are the lowercase IDs (e.g. `#rq001-fr-01`, `#rq001-hld-02`); LLD sections use `#rq<nnn>-lld-nn-<topic>`.
+- Each requirement file `requirements/RQ<NNN>_<Name>.md` has a design folder `design/RQ<NNN>_<Name>/`; design file
+  names start with `RQ<NNN>_`. A folder holds as many HLD / LLD files as the scope of the requirement needs.
+- Writing rules (diagrams, step tables, what a design contains): [CLAUDE.md](CLAUDE.md).
 
-## 3. Traceability matrix
+## 3. Requirement files
+
+| RQ | Requirement file | Design folder | Title | Status | FR | NFR |
+|---|---|---|---|---|---|---|
+| RQ001 | [RQ001_CoreProject.md](requirements/RQ001_CoreProject.md) | [design/RQ001_CoreProject/](design/RQ001_CoreProject/) | Core project | Partially implemented | 1 | 3 |
+
+## 4. Traceability matrix
 
 | Requirement | HLD | LLD | API (`operationId`) | Source |
 |---|---|---|---|---|
-| [FR-SMP-01](requirements/functional-requirements.md#fr-smp-01) / [UC-SMP-01](requirements/functional-requirements.md#uc-smp-01) | [HLD-02](design/high-level-design.md#hld-02) | [LLD-03](design/lld/LLD-03-sample-hello.md) | [`getSampleHello`](api-schema.md#getsamplehello) | `frontend/renderer/app.js`, `frontend/renderer/api/sample/sampleHelloApi.js`, `backend/src/api/sample/*`, `backend/src/services/sample/*` |
-| [NFR-01](requirements/non-functional-requirements.md#nfr-01) | [HLD-01](design/high-level-design.md#hld-01), [HLD-05](design/high-level-design.md#hld-05) | [LLD-02](design/lld/LLD-02-api-request-pipeline.md) | all | `api/openapi.yaml` |
-| [NFR-02](requirements/non-functional-requirements.md#nfr-02) | [HLD-01](design/high-level-design.md#hld-01), [HLD-03](design/high-level-design.md#hld-03), [HLD-05](design/high-level-design.md#hld-05) | [LLD-01](design/lld/LLD-01-backend-lifecycle.md), [LLD-02](design/lld/LLD-02-api-request-pipeline.md) | all | `frontend/renderer/api/apiClient.js`, `frontend/main/ipcChannels.js`, `frontend/preload/preload.js`, `backend/src/api/HttpTypes.h`, `backend/src/api/IRouteRegistry.h`, `backend/src/api/HttpServer.*` |
-| [NFR-03](requirements/non-functional-requirements.md#nfr-03) | — (not implemented) | — | — | — |
+| [RQ001-FR-01](requirements/RQ001_CoreProject.md#rq001-fr-01) / [RQ001-UC-01](requirements/RQ001_CoreProject.md#rq001-uc-01) | [RQ001-HLD-04](design/RQ001_CoreProject/RQ001_HLD.md#rq001-hld-04) | [RQ001-LLD-02 §6](design/RQ001_CoreProject/RQ001_LLD-02-api-request-pipeline.md#rq001-lld-02-sample), [RQ001-LLD-01 §5](design/RQ001_CoreProject/RQ001_LLD-01-backend-lifecycle.md#rq001-lld-01-failures) | [`getSampleHello`](api-schema.md#getsamplehello) | `frontend/renderer/app.js`, `frontend/renderer/api/sample/sampleHelloApi.js`, `backend/src/api/sample/*`, `backend/src/services/sample/*` |
+| [RQ001-NFR-01](requirements/RQ001_CoreProject.md#rq001-nfr-01) | [RQ001-HLD-02](design/RQ001_CoreProject/RQ001_HLD.md#rq001-hld-02) D1, D9, [RQ001-HLD-03](design/RQ001_CoreProject/RQ001_HLD.md#rq001-hld-03) | [RQ001-LLD-02](design/RQ001_CoreProject/RQ001_LLD-02-api-request-pipeline.md) | all | `api/openapi.yaml` |
+| [RQ001-NFR-02](requirements/RQ001_CoreProject.md#rq001-nfr-02) | [RQ001-HLD-01](design/RQ001_CoreProject/RQ001_HLD.md#rq001-hld-01), [RQ001-HLD-02](design/RQ001_CoreProject/RQ001_HLD.md#rq001-hld-02) D2–D8, D10, [RQ001-HLD-03](design/RQ001_CoreProject/RQ001_HLD.md#rq001-hld-03-nfr-02) | [RQ001-LLD-01](design/RQ001_CoreProject/RQ001_LLD-01-backend-lifecycle.md), [RQ001-LLD-02](design/RQ001_CoreProject/RQ001_LLD-02-api-request-pipeline.md) | all | `frontend/renderer/api/apiClient.js`, `frontend/main/ipcChannels.js`, `frontend/preload/preload.js`, `backend/src/api/HttpTypes.h`, `backend/src/api/IRouteRegistry.h`, `backend/src/api/HttpServer.*` |
+| [RQ001-NFR-03](requirements/RQ001_CoreProject.md#rq001-nfr-03) | [RQ001-HLD-03](design/RQ001_CoreProject/RQ001_HLD.md#rq001-hld-03-nfr-03): no design yet (not implemented) | — | — | — |
 
-Infrastructure flows that every feature relies on (no FR of their own):
+## 5. Updating the docs
 
-| Flow | HLD | LLD |
-|---|---|---|
-| App start / end, backend handshake | [HLD-03](design/high-level-design.md#hld-03), [HLD-04](design/high-level-design.md#hld-04) | [LLD-01](design/lld/LLD-01-backend-lifecycle.md) |
-| Calling one API | [HLD-05](design/high-level-design.md#hld-05) | [LLD-02](design/lld/LLD-02-api-request-pipeline.md) |
+Per the project rule "spec first", documents are updated before code. There are no templates: follow RQ001
+as the example.
 
-## 4. Updating the docs
-
-Per the project rule "spec first", documents are updated before code:
-
-1. Requirement: add/update the FR/UC or NFR (owner provides the content).
+1. Requirement: for a new work item, create `requirements/RQ<NNN>_<Name>.md` (next free number) and add it to
+   section 3; otherwise update the existing RQ file. The owner provides the content.
 2. API: change `api/openapi.yaml`, then [api-schema.md](api-schema.md).
-3. Design: update [high-level-design.md](design/high-level-design.md) if the overview changes; add or update the LLD
-   (copy [_template.md](design/lld/_template.md)).
-4. Add the new row/links to the traceability matrix above.
+3. Design: create or update `design/RQ<NNN>_<Name>/` with the HLD / LLD files the scope needs
+   (`RQ<NNN>_HLD.md`, `RQ<NNN>_LLD-NN-<name>.md`).
+4. Add the new rows/links to the traceability matrix in section 4.

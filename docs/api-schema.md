@@ -5,9 +5,9 @@
 | Scope | The backend API as readable tables |
 | Source of truth | [`api/openapi.yaml`](../api/openapi.yaml) — **if this file and the YAML disagree, the YAML is right**; fix this file. |
 | Contract version | `0.1.0` (OpenAPI `3.1.0`, title "SystemLens Backend API") |
-| Traces to | [NFR-01](requirements/non-functional-requirements.md#nfr-01) |
+| Traces to | [RQ001-NFR-01](requirements/RQ001_CoreProject.md#rq001-nfr-01) |
 | Rules | [api-convention.md](api-convention.md) |
-| Index / matrix | [docs/README.md](README.md#3-traceability-matrix) |
+| Index / matrix | [docs/README.md](README.md#4-traceability-matrix) |
 
 ## 1. General
 
@@ -34,7 +34,7 @@
 
 | Method | Path | `operationId` | Tag | Auth | Responses | Requirement |
 |---|---|---|---|---|---|---|
-| `GET` | `/api/v1/sample/hello` | [`getSampleHello`](#getsamplehello) | `sample` | `bearerAuth` | 200, 401, 500 | [FR-SMP-01](requirements/functional-requirements.md#fr-smp-01) |
+| `GET` | `/api/v1/sample/hello` | [`getSampleHello`](#getsamplehello) | `sample` | `bearerAuth` | 200, 401, 500 | [RQ001-FR-01](requirements/RQ001_CoreProject.md#rq001-fr-01) |
 
 ## 3. Endpoints
 
@@ -48,8 +48,8 @@
 | Auth | `bearerAuth` |
 | Parameters | none |
 | Request body | none |
-| Requirement | [FR-SMP-01](requirements/functional-requirements.md#fr-smp-01) |
-| Design | [LLD-03](design/lld/LLD-03-sample-hello.md) |
+| Requirement | [RQ001-FR-01](requirements/RQ001_CoreProject.md#rq001-fr-01) |
+| Design | [RQ001-LLD-02 §6](design/RQ001_CoreProject/RQ001_LLD-02-api-request-pipeline.md#rq001-lld-02-sample) |
 
 Responses:
 
@@ -91,7 +91,7 @@ Type: `object` — error body (RFC 7807, media type `application/problem+json`).
 | <a id="resp-internalerror"></a>`InternalError` | `500` | Unexpected server-side failure. | `application/problem+json` | [`Problem`](#problem) |
 
 `NotFound` is defined in the contract but not referenced by any endpoint; the backend returns it for any
-unknown path (see [LLD-02](design/lld/LLD-02-api-request-pipeline.md)).
+unknown path (see [RQ001-LLD-02](design/RQ001_CoreProject/RQ001_LLD-02-api-request-pipeline.md)).
 
 ## 6. Template for a new endpoint
 
@@ -110,7 +110,7 @@ After changing `api/openapi.yaml`, add a row to section 2 and a block like this 
 | Parameters | <name (in), type, required, description> or none |
 | Request body | <schema> or none |
 | Requirement | <FR-...> |
-| Design | <LLD-NN> |
+| Design | <RQ<NNN>-LLD-NN> |
 
 Responses:
 
