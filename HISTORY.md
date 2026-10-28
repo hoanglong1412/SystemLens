@@ -19,6 +19,29 @@ Mẫu entry:
 - AI: đề xuất / kết quả / vấn đề phát hiện
 -->
 
+## 2026-10-29 — Tổ chức lại docs/ theo work item RQ001, thêm quy tắc viết tài liệu
+
+**Lý do:** Gom yêu cầu và design theo từng work item (RQ<NNN>) để dễ trace và dễ thêm work item mới;
+ghi lại quy tắc viết tài liệu ngay trong `docs/`.
+
+**Nội dung:**
+- `docs/requirements/RQ001_CoreProject.md` thay cho `functional-requirements.md` và `non-functional-requirements.md`
+  (ID mới dạng `RQ001-FR-01`, `RQ001-NFR-01..03`).
+- `docs/design/RQ001_CoreProject/`: `RQ001_HLD.md`, `RQ001_LLD-01-backend-lifecycle.md`,
+  `RQ001_LLD-02-api-request-pipeline.md` thay cho `high-level-design.md` và `lld/` (LLD-03 sample hello gộp
+  vào LLD-02 §6, bỏ `_template.md`).
+- `docs/README.md`: cây thư mục, bảng ID, bảng requirement file và traceability matrix theo ID mới.
+- `docs/api-schema.md`, `docs/api-convention.md`: cập nhật link sang ID / file mới.
+- `docs/CLAUDE.md` (mới): quy tắc viết tài liệu trong `docs/`.
+- `docs/ui-design/` giữ nguyên `.gitkeep`; link Figma (`figma.onl`) không nằm ở nhánh này.
+
+**Trao đổi user ↔ AI:**
+- User: commit phần tài liệu trong working tree lên nhánh `feature/init`, không commit phần UI; phần UI commit
+  riêng lên nhánh `feature/int_cpu_preformance`. Sau đó: nhánh này không cần `docs/ui-design/` (giữ `.gitkeep`),
+  link Figma và `evi/` commit ở nhánh UI.
+- AI: tách commit theo thư mục — `docs/` (và HISTORY.md) ở commit này; `frontend/`, `docs/ui-design/figma.onl`,
+  `evi/` ở nhánh UI.
+
 ## 2026-10-28 — Tạo lại bộ tài liệu docs/ (yêu cầu, HLD, LLD, API schema) theo source hiện tại
 
 **Lý do:** Bộ docs cũ đã bị xoá để tái cấu trúc. User muốn bộ tài liệu mới dễ đọc, dễ trace từ yêu cầu → design

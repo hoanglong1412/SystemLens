@@ -3,9 +3,9 @@
 | Item | Value |
 |---|---|
 | Scope | Rules every backend API follows, as applied by the current code |
-| Traces to | [NFR-01](requirements/non-functional-requirements.md#nfr-01), [NFR-02](requirements/non-functional-requirements.md#nfr-02) |
+| Traces to | [RQ001-NFR-01](requirements/RQ001_CoreProject.md#rq001-nfr-01), [RQ001-NFR-02](requirements/RQ001_CoreProject.md#rq001-nfr-02) |
 | Contract | [`api/openapi.yaml`](../api/openapi.yaml) (source of truth), tables in [api-schema.md](api-schema.md) |
-| Detailed in | [HLD-05](design/high-level-design.md#hld-05), [LLD-02](design/lld/LLD-02-api-request-pipeline.md) |
+| Detailed in | [RQ001-HLD-03](design/RQ001_CoreProject/RQ001_HLD.md#rq001-hld-03), [RQ001-LLD-02](design/RQ001_CoreProject/RQ001_LLD-02-api-request-pipeline.md) |
 
 Referenced from `api/openapi.yaml`, `backend/src/api/ApiResponse.h` and `frontend/renderer/api/apiClient.js`.
 
@@ -107,4 +107,4 @@ Order taken from the current code structure and the project rule "spec first":
 | 7 | Add the `.cpp` files to `systemlens_core`. | `backend/CMakeLists.txt` |
 | 8 | Add the FE api module function. | `frontend/renderer/api/<area>/<name>Api.js` |
 
-Example: the sample endpoint `getSampleHello` ([LLD-03](design/lld/LLD-03-sample-hello.md)).
+Example: the sample endpoint `getSampleHello` ([RQ001-LLD-02 §6](design/RQ001_CoreProject/RQ001_LLD-02-api-request-pipeline.md#rq001-lld-02-sample)).
