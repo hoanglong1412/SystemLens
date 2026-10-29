@@ -1,5 +1,5 @@
 # SystemLens backend API contract (source of truth for backend and frontend).
-# Conventions: docs/api-convention.md. Change only with the user's approval.
+# Conventions: docs/api.md. Change only with the user's approval.
 openapi: 3.1.0
 info:
   title: SystemLens Backend API

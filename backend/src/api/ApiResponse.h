@@ -3,7 +3,7 @@
  * @brief   The only place where API responses are built, so every endpoint has the same shape.
  *
  * Success: JSON body of the resource (application/json).
- * Error  : RFC 7807 problem object (application/problem+json). See docs/api-convention.md.
+ * Error  : RFC 7807 problem object (application/problem+json). See docs/api.md.
  */
 #pragma once
 

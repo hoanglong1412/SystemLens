@@ -19,6 +19,23 @@ Mẫu entry:
 - AI: đề xuất / kết quả / vấn đề phát hiện
 -->
 
+## 2026-10-29 — Gộp tài liệu design của RQ001 còn 2 file: Architecture và api.md
+
+**Lý do:** User thấy bộ design (HLD + 2 LLD + api-schema + api-convention) quá nhiều và phức tạp so với requirement RQ001 chỉ có 1 FR + 3 NFR. Mục đích của design là giúp người đọc hiểu phần core: có bao nhiêu component, contract thế nào, các flow chính chạy ra sao, thêm 1 API làm thế nào, các module giao tiếp với nhau ra sao.
+
+**Nội dung:**
+- Thêm `docs/design/RQ001_CoreProject/RQ001_Architecture.md` thay cho `RQ001_HLD.md`, `RQ001_LLD-01`, `RQ001_LLD-02`: 1 sơ đồ component tổng (3 liên kết A/B/C giữa các process) + bảng handshake, code map, 3 flow (start / request / end) mỗi flow 1 sequence, 1 bảng lỗi chung, bảng layer, design decisions D1–D12 (giữ nguyên số), mapping requirement. Từ 14 sơ đồ còn 4.
+- Thêm `docs/api.md` thay cho `api-schema.md` và `api-convention.md`: các bước thêm API và mẫu controller đặt lên đầu, sau đó là rule và danh sách endpoint. `api/openapi.yaml` vẫn là nguồn chính.
+- `docs/README.md`: rút gọn còn bảng "muốn biết gì thì đọc file nào", cây thư mục, bảng RQ, bảng requirement → design → code; bỏ ma trận trace dài, bảng ID và các header 5 dòng.
+- Sửa tham chiếu `docs/api-convention.md` → `docs/api.md` trong comment của `api/openapi.yaml`, `backend/src/api/ApiResponse.h`, `frontend/renderer/api/apiClient.js` (chỉ comment) và link trong `RQ001_CoreProject.md` (chỉ link, không đổi nội dung requirement).
+- Sửa 2 chỗ HLD cũ nói chưa chính xác: D9 (chỉ 404 và exception được server tự tạo problem body, lỗi khác của cpp-httplib không có body, ApiClient xử lý bằng nhánh "không có problem body") và D5/stop (kill() ngay sau khi đóng stdin nên watchdog có thể không chạy).
+
+**Trao đổi user ↔ AI:**
+- User hỏi: các file design hiện có quá nhiều/phức tạp so với requirement không, có nên gộp hoặc trình bày cách khác không.
+- AI nhận xét: cùng một flow bị nói 3 lần (overview, detail, sequence) rồi lặp lại ở LLD; contract viết 2 lần (yaml và api-schema); cách thêm API nằm xa phần design. Đề xuất gộp còn 3 file chính (requirement, architecture, api). User đồng ý và yêu cầu làm trên nhánh `claude/hld-hien-tai-review-eqf1qo`.
+- Kiểm tra: link/anchor trong docs đúng, 4 diagram Mermaid render được (Mermaid 12), UTF-8 + CRLF (kiểm bằng `file`, chưa chạy được `Tool\check_*.ps1` vì môi trường cloud không có PowerShell).
+- Chưa làm (đã nêu trong review, chờ quyết định): thiết kế cho NFR-03, trigger "backend chết sau READY", góc nhìn build/deploy.
+
 ## 2026-10-30 — RQ001_HLD.md tổ chức theo trigger, đi từ overview đến detail
 
 **Lý do:** User muốn HLD dễ đọc theo hướng từ tổng quan tới chi tiết, chia theo các trigger chính của RQ001.

@@ -5,7 +5,7 @@
 | RQ | RQ001 |
 | Title | Core project: FE ↔ BE communication core, sample feature and structural rules |
 | Status | Partially implemented (RQ001-NFR-03 not implemented) |
-| Index / matrix | [docs/README.md](../README.md#3-requirement-files) |
+| Index / matrix | [docs/README.md](../README.md#2-requirement-files) |
 
 (Status values: `Implemented`, `Partially implemented`, `Not implemented`, `Removed`.)
 
@@ -73,7 +73,7 @@ Postcondition: the window shows either the greeting or an error message. There i
 |---|---|
 | Status | Implemented |
 | Requirement | The frontend and backend must conform to a shared API contract. All API definitions and changes must be reflected in the contract, which serves as the authoritative reference for both sides. Neither side may independently define or change the API without updating the contract. |
-| Contract | [`api/openapi.yaml`](../../api/openapi.yaml) (OpenAPI 3.1.0). Readable form: [api-schema.md](../api-schema.md). Rules: [api-convention.md](../api-convention.md). |
+| Contract | [`api/openapi.yaml`](../../api/openapi.yaml) (OpenAPI 3.1.0). Rules and endpoint list: [api.md](../api.md). |
 
 
 <a id="rq001-nfr-02"></a>

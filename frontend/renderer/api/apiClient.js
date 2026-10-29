@@ -4,7 +4,7 @@
  *         (renderer/api/**) calls the backend through this class, never through fetch directly.
  *
  * Adds the bearer token, applies a timeout and turns error responses
- * (RFC 7807 application/problem+json, see docs/api-convention.md) into ApiError.
+ * (RFC 7807 application/problem+json, see docs/api.md) into ApiError.
  */
 
 const DEFAULT_TIMEOUT_MS = 5000;
