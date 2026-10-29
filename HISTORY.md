@@ -19,6 +19,26 @@ Mẫu entry:
 - AI: đề xuất / kết quả / vấn đề phát hiện
 -->
 
+## 2026-10-30 — RQ001_HLD.md tổ chức theo trigger, đi từ overview đến detail
+
+**Lý do:** User muốn HLD dễ đọc theo hướng từ tổng quan tới chi tiết, chia theo các trigger chính của RQ001.
+
+**Nội dung:**
+- `docs/design/RQ001_CoreProject/RQ001_HLD.md`: chia thành 3 trigger — HLD-01 Start app, HLD-02 End app,
+  HLD-03 Request API from BE and display in FE. Mỗi trigger gồm: overview component (Frontend / IPC / Backend,
+  thêm API contract `api/openapi.yaml` ở HLD-03) → detail component (các phần tử trong FE và BE) → sequence.
+  Mọi diagram có bảng giải thích theo số. Design decisions chuyển thành HLD-04, mapping requirement thành HLD-05.
+- `RQ001_LLD-01`, `RQ001_LLD-02`, `docs/README.md`: cập nhật "Traces to" và traceability matrix theo ID HLD mới.
+- `docs/CLAUDE.md`: user rút gọn quy tắc (chỉ ghi thông tin đã xác minh, cây thư mục, quy tắc diagram, kiểm tra).
+
+**Trao đổi user ↔ AI:**
+- User yêu cầu: HLD đi từ overview đến detail, chia 3 trigger (start app, end app, request API và hiển thị), mỗi
+  trigger theo thứ tự overview component (FE, BE, IPC, DB) → detail component → sequence.
+- AI hỏi: code chưa có database thì block DB xử lý sao. User: DB ở đây là API / `api/openapi.yaml` nếu cần →
+  chỉ vẽ ở trigger request API. User chọn giữ design decisions và mapping, đặt sau 3 trigger.
+- AI đổi detail component của Start app sang dạng dọc vì dạng ngang quá rộng, khó đọc.
+- Kiểm tra: link/anchor đúng, 17 diagram trong design render được (Mermaid 12.2.0), định dạng UTF-8/CRLF hợp lệ.
+
 ## 2026-10-29 — Tổ chức lại docs/ theo work item RQ001, thêm quy tắc viết tài liệu
 
 **Lý do:** Gom yêu cầu và design theo từng work item (RQ<NNN>) để dễ trace và dễ thêm work item mới;

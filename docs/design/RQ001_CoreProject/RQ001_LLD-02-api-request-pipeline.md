@@ -2,7 +2,7 @@
 
 | Item | Value |
 |---|---|
-| Traces to | [RQ001-FR-01](../../requirements/RQ001_CoreProject.md#rq001-fr-01), [RQ001-UC-01](../../requirements/RQ001_CoreProject.md#rq001-uc-01) (A2), [RQ001-NFR-01](../../requirements/RQ001_CoreProject.md#rq001-nfr-01), [RQ001-NFR-02](../../requirements/RQ001_CoreProject.md#rq001-nfr-02), [RQ001-HLD-02](RQ001_HLD.md#rq001-hld-02) D2, D4, D7–D10, D12 |
+| Traces to | [RQ001-FR-01](../../requirements/RQ001_CoreProject.md#rq001-fr-01), [RQ001-UC-01](../../requirements/RQ001_CoreProject.md#rq001-uc-01) (A2), [RQ001-NFR-01](../../requirements/RQ001_CoreProject.md#rq001-nfr-01), [RQ001-NFR-02](../../requirements/RQ001_CoreProject.md#rq001-nfr-02), [RQ001-HLD-03](RQ001_HLD.md#rq001-hld-03), [RQ001-HLD-04](RQ001_HLD.md#rq001-hld-04) D2, D4, D7–D10, D12 |
 | Detailed in | — |
 | API | all endpoints ([api-schema.md](../../api-schema.md)); rules in [api-convention.md](../../api-convention.md) |
 | Index / matrix | [docs/README.md](../../README.md#4-traceability-matrix) |

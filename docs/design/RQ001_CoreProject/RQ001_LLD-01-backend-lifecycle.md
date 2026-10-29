@@ -2,7 +2,7 @@
 
 | Item | Value |
 |---|---|
-| Traces to | [RQ001-NFR-02](../../requirements/RQ001_CoreProject.md#rq001-nfr-02), [RQ001-UC-01](../../requirements/RQ001_CoreProject.md#rq001-uc-01) (A1), [RQ001-HLD-02](RQ001_HLD.md#rq001-hld-02) D3–D6, D11 |
+| Traces to | [RQ001-NFR-02](../../requirements/RQ001_CoreProject.md#rq001-nfr-02), [RQ001-UC-01](../../requirements/RQ001_CoreProject.md#rq001-uc-01) (A1), [RQ001-HLD-01](RQ001_HLD.md#rq001-hld-01), [RQ001-HLD-02](RQ001_HLD.md#rq001-hld-02), [RQ001-HLD-04](RQ001_HLD.md#rq001-hld-04) D3–D6, D11 |
 | Detailed in | — |
 | Index / matrix | [docs/README.md](../../README.md#4-traceability-matrix) |
 
