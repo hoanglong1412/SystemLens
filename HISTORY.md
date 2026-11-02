@@ -19,6 +19,31 @@ Mẫu entry:
 - AI: đề xuất / kết quả / vấn đề phát hiện
 -->
 
+## 2026-11-03 — OpenSpec 1.16.0, bật đủ 12 workflow (expanded profile)
+
+**Lý do:** Luồng `explore → propose → apply → archive` của profile `core` sinh mọi artifact trong một lượt, khó
+review từng bước. OpenSpec có sẵn các workflow chi tiết hơn (`new`, `continue`, `verify`…); bản 1.16.0 sửa nhiều
+lỗi của chính các workflow này.
+
+**Nội dung:**
+- Cấu hình OpenSpec global (`%APPDATA%\openspec\config.json`, ngoài repo): `profile: custom`, `delivery: both`,
+  12 workflow `propose, explore, new, continue, apply, update, ff, sync, archive, bulk-archive, verify, onboard`.
+- Nâng OpenSpec CLI 1.7.0 → 1.16.0 (`npm install -g @fission-ai/openspec@1.16.0`), chạy `openspec update`.
+- `.claude/commands/opsx/` và `.claude/skills/`: thêm 6 command + 6 skill mới (`new`, `continue`, `ff`, `verify`,
+  `bulk-archive`, `onboard`); 12 file cũ được sinh lại theo nội dung 1.16.0. Toàn bộ chuyển sang UTF-8 + CRLF.
+- Tag `openspec-v1.16.0` đánh dấu commit này.
+
+**Trao đổi user ↔ AI:**
+- User muốn chia luồng OpenSpec thành các bước nhỏ theo kiểu SDLC. AI kiểm tra: OpenSpec 1.7.0 đã hỗ trợ sẵn
+  workflow chi tiết và schema tự định nghĩa; user chọn chỉ bật expanded workflow, không làm thêm.
+- User hỏi để profile ở mức project: OpenSpec không có profile cấp project (chỉ có thể trỏ `XDG_CONFIG_HOME`
+  vào repo). User chọn giữ global.
+- User hỏi cách biết đang ở stage nào: `openspec list`, `openspec status --change <name>`, `openspec view`.
+- AI so sánh changelog 1.7.0 → 1.16.0 (status --all, show --diff, update --dry-run, sửa apply/verify/continue/
+  archive); Node v24.19.0 đủ điều kiện (≥ 22.12). User đồng ý nâng cấp.
+- Kiểm tra: `openspec update --dry-run` chỉ báo cập nhật 24 file, không xoá; `openspec version --check` up to date;
+  định dạng UTF-8/CRLF hợp lệ.
+
 ## 2026-11-03 — Chuyển docs/api.md vào docs/api/api-guide.md
 
 **Lý do:** Tài liệu API có folder riêng `docs/api/`; tên file thể hiện đủ nội dung (cách thêm API, quy tắc,
