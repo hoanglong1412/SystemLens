@@ -73,7 +73,7 @@ Postcondition: the window shows either the greeting or an error message. There i
 |---|---|
 | Status | Implemented |
 | Requirement | The frontend and backend must conform to a shared API contract. All API definitions and changes must be reflected in the contract, which serves as the authoritative reference for both sides. Neither side may independently define or change the API without updating the contract. |
-| Contract | [`api/openapi.yaml`](../../api/openapi.yaml) (OpenAPI 3.1.0). Rules and endpoint list: [api.md](../api.md). |
+| Contract | [`api/openapi.yaml`](../../api/openapi.yaml) (OpenAPI 3.1.0). Rules and endpoint list: [api-guide.md](../api/api-guide.md). |
 
 
 <a id="rq001-nfr-02"></a>

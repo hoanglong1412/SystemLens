@@ -19,6 +19,25 @@ Mẫu entry:
 - AI: đề xuất / kết quả / vấn đề phát hiện
 -->
 
+## 2026-11-03 — Chuyển docs/api.md vào docs/api/api-guide.md
+
+**Lý do:** Tài liệu API có folder riêng `docs/api/`; tên file thể hiện đủ nội dung (cách thêm API, quy tắc,
+danh sách endpoint).
+
+**Nội dung:**
+- `docs/api.md` → `docs/api/api-guide.md` (`git mv`, nội dung giữ nguyên; sửa link tương đối theo vị trí mới).
+- Cập nhật link tới file mới trong `docs/README.md` (cây thư mục có cấp `api/`), `RQ001_Architecture.md`,
+  `RQ001_CoreProject.md` (chỉ đổi đường dẫn link).
+- Cập nhật comment đường dẫn trong `api/openapi.yaml`, `backend/src/api/ApiResponse.h`,
+  `frontend/renderer/api/apiClient.js` (chỉ comment).
+- `docs/CLAUDE.md`: user viết lại quy tắc viết tài liệu (văn phong, không nhắc trao đổi với user/AI, không
+  trùng lặp, quy tắc cây thư mục và diagram chi tiết hơn).
+
+**Trao đổi user ↔ AI:**
+- User yêu cầu tạo `docs/api/`, chuyển `api.md` vào và gợi ý tên file. AI đưa các lựa chọn `api-guide.md`,
+  `README.md`, `api-convention.md`, `api-reference.md`; user chọn `api-guide.md`.
+- Kiểm tra: link/anchor trong `docs/` đúng, định dạng UTF-8/CRLF hợp lệ.
+
 ## 2026-10-29 — Gộp tài liệu design của RQ001 còn 2 file: Architecture và api.md
 
 **Lý do:** User thấy bộ design (HLD + 2 LLD + api-schema + api-convention) quá nhiều và phức tạp so với requirement RQ001 chỉ có 1 FR + 3 NFR. Mục đích của design là giúp người đọc hiểu phần core: có bao nhiêu component, contract thế nào, các flow chính chạy ra sao, thêm 1 API làm thế nào, các module giao tiếp với nhau ra sao.

@@ -3,11 +3,11 @@
 | Item | Value |
 |---|---|
 | Requirement | [RQ001](../../requirements/RQ001_CoreProject.md): FR-01 / UC-01, NFR-01, NFR-02, NFR-03 |
-| API | [api.md](../../api.md) (how to add an API, rules, endpoints); contract [`api/openapi.yaml`](../../../api/openapi.yaml) |
+| API | [api-guide.md](../../api/api-guide.md) (how to add an API, rules, endpoints); contract [`api/openapi.yaml`](../../../api/openapi.yaml) |
 
 This is the one design document of the project core. It answers: what the components are, how they talk,
 how the main flows run, what happens on failure and why the design is this way. How to add an API is in
-[api.md](../../api.md).
+[api-guide.md](../../api/api-guide.md).
 
 | Section | Question it answers |
 |---|---|
@@ -263,7 +263,7 @@ handlers point into them.
 | Requirement | Status | How |
 |---|---|---|
 | [FR-01](../../requirements/RQ001_CoreProject.md#rq001-fr-01) / [UC-01](../../requirements/RQ001_CoreProject.md#rq001-uc-01) | Implemented | Start §3.1, request §3.2; A1 and A2 in §4; D11, D12. |
-| [NFR-01](../../requirements/RQ001_CoreProject.md#rq001-nfr-01) | Implemented | Contract first, then both sides ([api.md](../../api.md)); `ApiResponse` keeps every response on the contract's shapes; D1, D9. |
+| [NFR-01](../../requirements/RQ001_CoreProject.md#rq001-nfr-01) | Implemented | Contract first, then both sides ([api-guide.md](../../api/api-guide.md)); `ApiResponse` keeps every response on the contract's shapes; D1, D9. |
 | [NFR-02](../../requirements/RQ001_CoreProject.md#rq001-nfr-02) | Implemented | Only the code in the table below knows the current IPC method; D2–D8, D10. |
 | [NFR-03](../../requirements/RQ001_CoreProject.md#rq001-nfr-03) | Not implemented | No design yet, see below. |
 
