@@ -2,8 +2,8 @@
 
 | Item | Value |
 |---|---|
-| Contract | [`api/openapi.yaml`](../api/openapi.yaml): the single source of truth for backend and frontend ([RQ001-NFR-01](requirements/RQ001_CoreProject.md#rq001-nfr-01)). If this file and the YAML disagree, the YAML is right. |
-| Architecture | How the pieces fit: [RQ001_Architecture.md](design/RQ001_CoreProject/RQ001_Architecture.md) |
+| Contract | [`api/openapi.yaml`](../../api/openapi.yaml): the single source of truth for backend and frontend ([RQ001-NFR-01](../requirements/RQ001_CoreProject.md#rq001-nfr-01)). If this file and the YAML disagree, the YAML is right. |
+| Architecture | How the pieces fit: [RQ001_Architecture.md](../design/RQ001_CoreProject/RQ001_Architecture.md) |
 | Contract version | `0.1.0` (OpenAPI `3.1.0`) |
 
 | Section | Content |
@@ -106,7 +106,7 @@ the FE ↔ BE plumbing and serve as reference examples; registered only when the
 
 | Method | Path | `operationId` | Responses | Requirement |
 |---|---|---|---|---|
-| `GET` | `/api/v1/sample/hello` | `getSampleHello` | 200 `SampleHelloResponse`, 401, 500 | [RQ001-FR-01](requirements/RQ001_CoreProject.md#rq001-fr-01) |
+| `GET` | `/api/v1/sample/hello` | `getSampleHello` | 200 `SampleHelloResponse`, 401, 500 | [RQ001-FR-01](../requirements/RQ001_CoreProject.md#rq001-fr-01) |
 
 Schemas:
 
