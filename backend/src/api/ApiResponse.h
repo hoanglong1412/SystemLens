@@ -23,6 +23,7 @@ inline constexpr int kBadRequest = 400;
 inline constexpr int kUnauthorized = 401;
 inline constexpr int kNotFound = 404;
 inline constexpr int kInternalServerError = 500;
+inline constexpr int kNotImplemented = 501;
 } // namespace status
 
 Response ok(const nlohmann::json& body, int statusCode = status::kOk);

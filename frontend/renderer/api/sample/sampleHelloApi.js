@@ -11,7 +11,7 @@ export const SAMPLE_HELLO_PATH = '/api/v1/sample/hello';
 /**
  * Fetch the greeting from the backend.
  * @param {import('../apiClient.js').ApiClient} client Configured API client.
- * @returns {Promise<string>} The greeting ("@@Hello world@@").
+ * @returns {Promise<string>} The platform greeting (e.g. "hello from Windows").
  * @throws {import('../apiClient.js').ApiError}
  */
 export async function getSampleHello(client) {

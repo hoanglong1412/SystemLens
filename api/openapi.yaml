@@ -26,7 +26,10 @@ paths:
     get:
       tags: [sample]
       operationId: getSampleHello
-      summary: Return a fixed greeting to prove FE <-> BE communication works.
+      summary: Return a greeting that names the platform the backend runs on.
+      description: >
+        Proves FE <-> BE communication and that the backend reaches its platform library:
+        the greeting comes from the hello provider of the platform plugin.
       responses:
         "200":
           description: Greeting.
@@ -35,11 +38,13 @@ paths:
               schema:
                 $ref: "#/components/schemas/SampleHelloResponse"
               example:
-                message: "@@Hello world@@"
+                message: "hello from Windows"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "500":
           $ref: "#/components/responses/InternalError"
+        "501":
+          $ref: "#/components/responses/NotImplemented"
 components:
   securitySchemes:
     bearerAuth:
@@ -55,7 +60,8 @@ components:
       properties:
         message:
           type: string
-          description: Always "@@Hello world@@".
+          description: >
+            Platform greeting: "hello from Windows", "hello from Linux" or "hello from MAC".
     Problem:
       type: object
       description: Error body (RFC 7807, media type application/problem+json).
@@ -88,6 +94,12 @@ components:
             $ref: "#/components/schemas/Problem"
     InternalError:
       description: Unexpected server-side failure.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    NotImplemented:
+      description: The platform library of this backend does not provide the feature behind this endpoint.
       content:
         application/problem+json:
           schema:

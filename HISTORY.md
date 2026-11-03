@@ -19,6 +19,42 @@ Mẫu entry:
 - AI: đề xuất / kết quả / vấn đề phát hiện
 -->
 
+## 2026-11-04 — Implement add-platform-plugin: platform plugin + hello provider (Linux đã kiểm chứng)
+
+**Lý do:** Thực hiện change `add-platform-plugin` (`openspec apply`): thêm tầng Provider dưới dạng thư viện
+nền tảng nạp lúc runtime, và để `getSampleHello` lấy lời chào từ đó.
+
+**Nội dung:**
+- `backend/src/providers/`: `IHelloProvider.h`, `PluginAbi.h` (ABI version 1, tên và chữ ký entry point
+  `extern "C"`, macro export, ràng buộc cùng cây CMake / cùng config / CRT động).
+- `backend/src/platform/`: `DynamicLibrary` (Windows `LoadLibraryExW` chỉ tìm trong thư mục DLL + System32;
+  POSIX `dlopen(RTLD_NOW | RTLD_LOCAL)`), `ExecutablePath` (Windows / Linux / macOS), `PlatformPlugin` (kiểm tra
+  file, ABI, tạo provider; deleter của provider giữ thư viện tới khi provider bị huỷ).
+- `backend/plugins/{windows,linux,macos}/`: `PluginEntry.cpp` + `*HelloProvider` ("hello from Windows" /
+  "hello from Linux" / "hello from MAC"); entry point hello chỉ có khi `SYSTEMLENS_ENABLE_SAMPLE_API=ON`.
+- `FeatureUnavailableError`; `SampleHelloService` nhận provider qua constructor (bỏ `kGreeting`);
+  `SampleHelloController` trả 501; `status::kNotImplemented`; `Application` nạp plugin trước khi tạo controller.
+- `backend/CMakeLists.txt`: chọn nền tảng (`SYSTEMLENS_PLATFORM`), define Windows chỉ khi `WIN32`, target
+  `systemlens_provider_api` và `systemlens_platform` (`SHARED`, visibility hidden), tên file thư viện truyền vào
+  host bằng `$<TARGET_FILE_NAME:...>`, `add_dependencies` thay vì link.
+- `api/openapi.yaml`: mô tả/ví dụ mới của `message`, response `501`. Sửa JSDoc `sampleHelloApi.js` (chỉ comment).
+- `tasks.md`: xong nhóm 1–6 và 8 (Linux). Còn nhóm 7 (kiểm chứng Windows) và 9 (`docs/`).
+
+**Trao đổi user ↔ AI:**
+- User: chạy `openspec apply`.
+- AI: CLI `openspec` không có trong môi trường cloud, theo dõi `tasks.md` thủ công.
+- AI: trong `PluginAbi.h` dùng include tương đối (`"sample/IHelloProvider.h"`) để plugin chỉ cần
+  `src/providers/` trên include path đúng như design D1.
+- AI: proxy chặn tải tarball GitHub của FetchContent; clone hai thư viện bằng git vào scratchpad và build với
+  `-DFETCHCONTENT_SOURCE_DIR_HTTPLIB` / `-DFETCHCONTENT_SOURCE_DIR_NLOHMANN_JSON` (chỉ trên dòng lệnh, không sửa
+  CMakeLists).
+- Kiểm chứng Linux (Ninja, GCC + Clang, `-Wall -Wextra -Wpedantic`: không warning): build ra
+  `systemlens-backend` + `libsystemlens_platform.so`, chỉ 3 symbol export; `{"message":"hello from Linux"}` khi
+  chạy từ thư mục khác; thiếu thư viện (có bản sao ở cwd và `LD_LIBRARY_PATH`) → `Fatal:` có đường dẫn, exit 1;
+  thiếu entry point ABI / lệch ABI → `Fatal:`; thiếu entry point create / create trả nullptr → cảnh báo, READY,
+  501; đóng stdin → exit 0; chạy lại với ASan + UBSan không lỗi. Các sửa tạm làm trên bản sao trong scratchpad.
+- Chưa build được trên Windows (môi trường Linux) nên nhóm 7 chưa tick; `docs/` (nhóm 9) chờ sau đó.
+
 ## 2026-11-04 — OpenSpec change add-platform-plugin: build và kiểm chứng cả Linux
 
 **Lý do:** Trước đây chỉ Windows được build; Linux và macOS chỉ viết. Môi trường cloud có sẵn cmake, g++,

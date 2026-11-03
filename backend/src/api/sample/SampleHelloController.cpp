@@ -5,6 +5,7 @@
 #include "api/sample/SampleHelloController.h"
 
 #include "api/ApiResponse.h"
+#include "services/FeatureUnavailableError.h"
 
 #include <stdexcept>
 
@@ -35,11 +36,19 @@ void SampleHelloController::registerRoutes(IRouteRegistry& registry)
 /**
  * @brief Handle GET kRoute.
  * @param request Incoming request (unused: the endpoint takes no input).
- * @return 200 with {"message": <greeting>}.
+ * @return 200 with {"message": <greeting>}, or 501 when the platform has no hello provider.
  */
 Response SampleHelloController::handleGetHello(const Request& /*request*/) const
 {
-    return ok({{"message", m_service->getGreeting()}});
+    try
+    {
+        return ok({{"message", m_service->getGreeting()}});
+    }
+    catch (const services::FeatureUnavailableError& e)
+    {
+        // 501 (not 404): the route exists, but this platform cannot serve it.
+        return problem(status::kNotImplemented, "Not Implemented", e.what());
+    }
 }
 
 } // namespace systemlens::api::sample

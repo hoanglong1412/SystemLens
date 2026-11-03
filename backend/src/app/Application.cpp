@@ -4,6 +4,8 @@
  */
 #include "app/Application.h"
 
+#include "platform/ExecutablePath.h"
+
 #include <nlohmann/json.hpp>
 
 #include <iostream>
@@ -31,14 +33,28 @@ api::HttpServerOptions toServerOptions(const AppConfig& config)
     return options;
 }
 
+/**
+ * @brief Absolute path of the platform library, next to the executable.
+ * @return Executable directory + file name of the systemlens_platform target.
+ * @throws std::runtime_error when the executable directory cannot be determined.
+ */
+std::filesystem::path platformLibraryPath()
+{
+    // The file name comes from CMake ($<TARGET_FILE_NAME:systemlens_platform>), so it always matches
+    // the built file; only the executable's directory is searched (spec platform-plugin).
+    return platform::executableDirectory() / SYSTEMLENS_PLATFORM_LIBRARY_FILE;
+}
+
 } // namespace
 
 /**
  * @brief Build the object graph. Does not open any socket yet.
  * @param config Parsed startup configuration.
+ * @throws std::runtime_error when the platform library is missing, cannot be loaded or has another ABI version.
  */
 Application::Application(AppConfig config)
     : m_config(std::move(config))
+    , m_platformPlugin(platformLibraryPath())
     , m_server(toServerOptions(m_config))
 {
     registerControllers();
@@ -81,7 +97,7 @@ void Application::registerControllers()
     // Add new controllers here: create the service(s), the controller, then register its routes.
 #if SYSTEMLENS_ENABLE_SAMPLE_API
     m_controllers.push_back(std::make_unique<api::sample::SampleHelloController>(
-        std::make_shared<services::sample::SampleHelloService>()));
+        std::make_shared<services::sample::SampleHelloService>(m_platformPlugin.createHelloProvider())));
 #endif
 
     for (const auto& controller : m_controllers)

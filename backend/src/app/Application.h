@@ -3,6 +3,9 @@
  * @brief   Composition root of the backend: creates services and controllers, wires them
  *          into the HttpServer, performs the startup handshake and runs until shutdown.
  *
+ * Platform plugin: the constructor loads the platform library from the executable's directory
+ * (see platform/PlatformPlugin.h). A library-level failure throws, so no READY line is printed.
+ *
  * Startup handshake (consumed by frontend/main/backendProcess.js):
  *   once the socket is bound, one line is written to stdout:
  *     SYSTEMLENS_READY {"port":<port>}
@@ -16,6 +19,7 @@
 #include "api/HttpServer.h"
 #include "api/IController.h"
 #include "app/AppConfig.h"
+#include "platform/PlatformPlugin.h"
 
 #include <memory>
 #include <thread>
@@ -38,6 +42,9 @@ private:
     void startParentWatchdog();
 
     AppConfig m_config;
+    // Declared before the controllers so it is destroyed after them: services hold providers created
+    // by the plugin (the provider deleters also keep the library loaded, see PlatformPlugin).
+    platform::PlatformPlugin m_platformPlugin;
     // Declared before m_server so they are destroyed after it: the server's handlers point into them.
     std::vector<std::unique_ptr<api::IController>> m_controllers;
     api::HttpServer m_server;
