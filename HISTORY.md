@@ -19,6 +19,45 @@ Mẫu entry:
 - AI: đề xuất / kết quả / vấn đề phát hiện
 -->
 
+## 2026-11-04 — OpenSpec change add-platform-plugin: proposal, specs, design
+
+**Lý do:** Backend cần một chỗ cho code riêng của từng OS (process, CPU… sau này), nhưng chưa có tầng Provider
+và chỉ build được trên Windows. API sample `getSampleHello` được chọn làm ví dụ đầu tiên: trả lời chào khác nhau
+theo nền tảng, với xử lý thật nằm trong thư viện động (plugin) do CMake chọn theo OS. Theo quy tắc spec first,
+commit này chỉ có artifact OpenSpec, chưa có code.
+
+**Nội dung:**
+- `openspec/changes/add-platform-plugin/` (schema `spec-driven`, 3/4 artifact, còn `tasks`):
+  - `proposal.md`: lý do, thay đổi (BREAKING: `message` thành `"hello from Windows"` / `"hello from Linux"` /
+    `"hello from MAC"`), hai capability mới, ảnh hưởng.
+  - `specs/platform-plugin/spec.md`: CMake chỉ build thư viện của OS đích, đặt cạnh exe; nạp lúc runtime chỉ từ
+    thư mục exe; kiểm tra ABI version; lỗi mức thư viện → không in READY, exit ≠ 0; thiếu provider → cảnh báo,
+    vẫn chạy, endpoint liên quan trả 501; giữ thư viện tới khi giải phóng hết provider.
+  - `specs/sample-hello/spec.md`: lời chào theo nền tảng; trả 501 khi không có hello provider.
+  - `design.md`: bố cục mã nguồn (cây có ký hiệu `[A]`/`[M]`/`[D]`), target CMake, chọn nền tảng, ABI C++
+    interface qua `extern "C"`, cách tìm và nạp thư viện, hai mức lỗi, vòng đời thư viện, cách kiểm chứng.
+- Chưa sửa `docs/`: cập nhật tài liệu là task cuối, sau khi build thành công.
+
+**Trao đổi user ↔ AI:**
+- User yêu cầu hỗ trợ đa nền tảng cho `getSampleHello` theo dạng plugin (dll), nền tảng phán định ở CMake.
+- AI nêu mâu thuẫn: nền tảng đã chốt lúc build thì nạp runtime để làm gì; so sánh static lib / link lúc build /
+  nạp runtime. User chọn **nạp lúc runtime**.
+- User chốt: mỗi OS một DLL; Mac và Linux chỉ viết, chưa build/test; frontend ngoài phạm vi (chỉ hiển thị);
+  "spec first" hiểu là OpenSpec trước, `docs/` để task cuối.
+- AI đề xuất ABI C API thuần (an toàn khi khác CRT); user chọn **C++ interface qua `extern "C"`**. AI ghi ràng
+  buộc cùng cây CMake, cùng config, CRT động vào design.
+- Tên change `add-platform-plugin`, hai capability `platform-plugin` và `sample-hello` (AI đề xuất, user dùng).
+- User hỏi vì sao tên file thư viện khác nhau giữa các OS: AI giải thích PREFIX/SUFFIX của CMake (PE/ELF/Mach-O,
+  quy ước `lib`), bẫy `MODULE` dùng `.so` trên macOS. User giữ nguyên proposal → design dùng `SHARED`.
+- User hỏi lib nạp được nhưng thiếu hàm có exit không: AI tách hai mức lỗi, đưa 3 lựa chọn (exit / 404 / 501).
+  User chọn **501**; AI cập nhật specs và proposal.
+- User hỏi về requirement "Response shape is unchanged"; AI chỉ ra tên nói về change thay vì hành vi, câu
+  "exactly one required property" chưa chặt, scenario khó test. User tự sửa tay `sample-hello/spec.md` (bỏ các
+  requirement về response shape, token, bật/tắt sample API).
+- User yêu cầu thêm ký hiệu `[A]`/`[M]`/`[D]` vào cây thư mục của design, đặt ngay trước phần giải thích; AI bổ
+  sung các file sửa còn thiếu (`openapi.yaml`, `ApiResponse.h`, `SampleHelloController.cpp`, `Application`).
+- Kiểm tra: `openspec validate add-platform-plugin --strict` hợp lệ; định dạng UTF-8/CRLF hợp lệ.
+
 ## 2026-11-03 — OpenSpec 1.16.0, bật đủ 12 workflow (expanded profile)
 
 **Lý do:** Luồng `explore → propose → apply → archive` của profile `core` sinh mọi artifact trong một lượt, khó
