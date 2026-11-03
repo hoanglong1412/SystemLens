@@ -19,6 +19,20 @@ Mẫu entry:
 - AI: đề xuất / kết quả / vấn đề phát hiện
 -->
 
+## 2026-11-04 — OpenSpec change add-platform-plugin: tasks
+
+**Lý do:** Hoàn tất artifact cuối của change `add-platform-plugin` (4/4) để có thể bắt đầu implement.
+
+**Nội dung:**
+- `openspec/changes/add-platform-plugin/tasks.md`: 8 nhóm task theo thứ tự phụ thuộc: provider contract →
+  loader phía host → plugin từng OS → service/controller/`Application` → CMake → `openapi.yaml` → kiểm chứng
+  thủ công trên Windows (theo D7) → cập nhật `docs/` (task cuối). Task Linux/macOS ghi rõ "written, not built".
+
+**Trao đổi user ↔ AI:**
+- User: chạy `openspec continue`.
+- AI: môi trường cloud chưa có CLI `openspec` (CLAUDE.md cấm tự cài), nên tạo `tasks.md` thủ công theo schema
+  `spec-driven`, dựa trên proposal, specs và design. Chưa chạy được `openspec validate`.
+
 ## 2026-11-04 — OpenSpec change add-platform-plugin: proposal, specs, design
 
 **Lý do:** Backend cần một chỗ cho code riêng của từng OS (process, CPU… sau này), nhưng chưa có tầng Provider
