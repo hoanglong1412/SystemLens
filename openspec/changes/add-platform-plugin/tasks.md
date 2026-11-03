@@ -9,16 +9,18 @@
 
 - [ ] 2.1 Add `DynamicLibrary.h`: load by absolute path, look up a symbol by name, unload in destructor; non-copyable; errors as `std::runtime_error`
 - [ ] 2.2 Add `platform/windows/DynamicLibrary.cpp`: `LoadLibraryExW` with `LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_SYSTEM32`, `GetProcAddress`, `FreeLibrary`, `GetLastError` turned into messages
-- [ ] 2.3 Add `platform/posix/DynamicLibrary.cpp`: `dlopen(RTLD_NOW | RTLD_LOCAL)`, `dlsym`, `dlclose`, `dlerror` messages (written, not built)
+- [ ] 2.3 Add `platform/posix/DynamicLibrary.cpp`: `dlopen(RTLD_NOW | RTLD_LOCAL)`, `dlsym`, `dlclose`, `dlerror` messages (shared by Linux and macOS, built on Linux)
 - [ ] 2.4 Add `ExecutablePath.h` and `platform/windows/ExecutablePath.cpp` (`GetModuleFileNameW`, growing buffer)
-- [ ] 2.5 Add `platform/linux/ExecutablePath.cpp` (`readlink /proc/self/exe`) and `platform/macos/ExecutablePath.cpp` (`_NSGetExecutablePath`) (written, not built)
-- [ ] 2.6 Add `PlatformPlugin.h/.cpp`: check the file exists (error names the expected path), load, look up the ABI entry point (error names it), compare versions (error shows both), `createHelloProvider()` returning `std::shared_ptr<const IHelloProvider>` whose deleter calls `destroy_hello_provider` and holds the library `shared_ptr`; on missing symbol or `nullptr`, log `[PlatformPlugin] WARNING: hello provider unavailable: ...` and return empty
+- [ ] 2.5 Add `platform/linux/ExecutablePath.cpp` (`readlink /proc/self/exe`, growing buffer)
+- [ ] 2.6 Add `platform/macos/ExecutablePath.cpp` (`_NSGetExecutablePath` + `realpath`) (written, not built)
+- [ ] 2.7 Add `PlatformPlugin.h/.cpp`: check the file exists (error names the expected path), load, look up the ABI entry point (error names it), compare versions (error shows both), `createHelloProvider()` returning `std::shared_ptr<const IHelloProvider>` whose deleter calls `destroy_hello_provider` and holds the library `shared_ptr`; on missing symbol or `nullptr`, log `[PlatformPlugin] WARNING: hello provider unavailable: ...` and return empty
 
 ## 3. Platform plugins (`backend/plugins/<os>/`)
 
 - [ ] 3.1 Add `plugins/windows/WindowsHelloProvider.h/.cpp` returning `"hello from Windows"`
 - [ ] 3.2 Add `plugins/windows/PluginEntry.cpp`: exported `noexcept` entry points, each catching everything and returning `nullptr` on failure; hello entry points only when `SYSTEMLENS_ENABLE_SAMPLE_API` is ON
-- [ ] 3.3 Add `plugins/linux/` (`"hello from Linux"`) and `plugins/macos/` (`"hello from MAC"`) with the same files (written, not built)
+- [ ] 3.3 Add `plugins/linux/` with the same files, `LinuxHelloProvider` returning `"hello from Linux"`
+- [ ] 3.4 Add `plugins/macos/` with the same files, `MacHelloProvider` returning `"hello from MAC"` (written, not built)
 
 ## 4. Service, controller and composition root
 
@@ -51,7 +53,15 @@
 - [ ] 7.6 Shutdown by closing stdin: exit code 0, no crash
 - [ ] 7.7 Frontend starts with the DLL present (greeting shown) and shows its startup error with the DLL missing
 
-## 8. Documentation (after the Windows build succeeds)
+## 8. Verification on Linux (manual, see design D7)
 
-- [ ] 8.1 Update `docs/` (architecture: Provider layer and platform plugin; `docs/api/api-guide.md`: new greeting and 501)
-- [ ] 8.2 Run `Tool/check_utf8.ps1` and `Tool/check_crlf.ps1` on every changed file
+- [ ] 8.1 Configure with Ninja and build; `backend/build/` contains `systemlens-backend` and `libsystemlens_platform.so` as the only platform library; no Windows-only definitions in the compile commands
+- [ ] 8.2 `curl` `GET /api/v1/sample/hello` returns `{"message":"hello from Linux"}`, also when started from another working directory
+- [ ] 8.3 Library removed from `backend/build/`, a copy in the current directory and in `LD_LIBRARY_PATH`: `Fatal:` names the expected path, no READY, exit code 1
+- [ ] 8.4 ABI mismatch and provider unavailable (temporary local edits, not committed): same results as 7.4 and 7.5
+- [ ] 8.5 Shutdown by closing stdin: exit code 0, no crash
+
+## 9. Documentation (after the Windows and Linux builds succeed)
+
+- [ ] 9.1 Update `docs/` (architecture: Provider layer and platform plugin; `docs/api/api-guide.md`: new greeting and 501)
+- [ ] 9.2 Run `Tool/check_utf8.ps1` and `Tool/check_crlf.ps1` on every changed file

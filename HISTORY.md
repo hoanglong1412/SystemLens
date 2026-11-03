@@ -19,6 +19,25 @@ Mẫu entry:
 - AI: đề xuất / kết quả / vấn đề phát hiện
 -->
 
+## 2026-11-04 — OpenSpec change add-platform-plugin: build và kiểm chứng cả Linux
+
+**Lý do:** Trước đây chỉ Windows được build; Linux và macOS chỉ viết. Môi trường cloud có sẵn cmake, g++,
+clang++, ninja nên build và kiểm chứng được Linux ngay trong change này.
+
+**Nội dung:**
+- `proposal.md`: Windows và Linux được build và kiểm chứng; chỉ macOS còn "written, not built" (loader POSIX
+  dùng chung nên đã được build qua Linux).
+- `design.md`: Context, Non-Goals, Risks cập nhật theo phạm vi mới; D7 đổi thành "Verification on Windows and
+  Linux", thêm dòng build output Linux và kiểm tra không nạp thư viện từ thư mục hiện tại / `LD_LIBRARY_PATH`.
+- `tasks.md`: tách task Linux khỏi macOS (2.5/2.6, 3.3/3.4); thêm nhóm 8 "Verification on Linux"; docs thành
+  nhóm 9.
+
+**Trao đổi user ↔ AI:**
+- User: task Linux/macOS ghi "chỉ viết, chưa build" → build luôn.
+- AI: máy cloud build được Linux nhưng không build được macOS; hỏi cách xử lý macOS (chỉ viết / thêm CI
+  GitHub Actions / user tự build trên Mac). User chọn **Linux build, macOS chỉ viết**.
+- Specs không đổi: chúng mô tả hành vi, không nói nền tảng nào được kiểm chứng.
+
 ## 2026-11-04 — OpenSpec change add-platform-plugin: tasks
 
 **Lý do:** Hoàn tất artifact cuối của change `add-platform-plugin` (4/4) để có thể bắt đầu implement.

@@ -33,8 +33,9 @@ OS feature depends on it.
   - macOS: `"hello from MAC"`
   The response shape is unchanged (no new field).
 - Windows-only compile definitions in `backend/CMakeLists.txt` apply only to Windows builds.
-- Linux and macOS code (plugins, POSIX library loader, CMake branches) is written but not built or
-  tested in this change. Only the Windows build is verified.
+- Windows and Linux are built and verified in this change. macOS code (plugin, `ExecutablePath`, CMake
+  branch) is written but not built or tested; the POSIX library loader is shared with Linux, so it is
+  built there.
 
 ## Capabilities
 
@@ -61,4 +62,4 @@ None (no existing specs).
 - **Packaging**: the plugin file must ship next to `systemlens-backend` (executable); a missing plugin
   prevents startup.
 - **Not affected**: frontend (it displays `message` as before); `docs/` updates are done as the last
-  task after the Windows build succeeds.
+  task after the Windows and Linux builds succeed.

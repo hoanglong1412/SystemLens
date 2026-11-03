@@ -19,7 +19,9 @@ Current state that shapes the approach:
   only through `ok()` / `problem()` (`api/ApiResponse.h`), whose `status` namespace has no 501 yet.
 - `SampleHelloService` returns a constant; `SampleHelloController` takes `ISampleHelloService` through
   its constructor and rejects null with `std::invalid_argument`.
-- Only Windows can be built and run in this change; Linux and macOS code is written but not compiled.
+- Windows and Linux can be built and run in this change (Linux with GCC or Clang and a single-config
+  generator such as Ninja, so the executable lands in `backend/build/`); macOS code is written but not
+  compiled. `Tool/*.ps1` scripts need PowerShell, so on Linux the backend is started directly.
 
 ## Goals / Non-Goals
 
@@ -34,8 +36,8 @@ Current state that shapes the approach:
 **Non-Goals:**
 - Loading several plugins, discovering plugins by scanning a directory, or hot reload.
 - Plugins built outside this CMake tree or with another compiler or configuration (see D3).
-- Building or testing on Linux/macOS, CI, and packaging/installers.
-- Frontend changes and `docs/` updates (last task, after the Windows build succeeds).
+- Building or testing on macOS, CI, and packaging/installers.
+- Frontend changes and `docs/` updates (last task, after the Windows and Linux builds succeed).
 
 ## Decisions
 
@@ -203,13 +205,18 @@ Alternative considered: relying only on member declaration order. Rejected as th
 because a provider copied into another object would silently outlive the library and crash on
 destruction (its vtable lives in the unloaded code).
 
-### D7. Verification on Windows
+### D7. Verification on Windows and Linux
 
-There is no automated test target. Verification is manual, with `Tool/run-backend.ps1` and `curl`:
+There is no automated test target. Verification is manual and runs on both platforms: on Windows with
+`Tool/run-backend.ps1` and `curl`, on Linux by starting `backend/build/systemlens-backend` directly
+and using `curl`. Names below are the Windows ones; on Linux read `libsystemlens_platform.so`,
+`"hello from Linux"` and no `.exe`. The frontend scenario is checked on Windows only.
 
 | Spec scenario | How |
 |---|---|
 | Windows build output | Build; `backend/build/Debug/` contains `systemlens-backend.exe` and `systemlens_platform.dll` only as platform library |
+| Linux build output | Configure with Ninja and build; `backend/build/` contains `systemlens-backend` and `libsystemlens_platform.so` only as platform library |
+| Library on the search path (Linux) | Library missing next to the executable, a copy in the current directory and in `LD_LIBRARY_PATH`; still `Fatal:` |
 | Greeting | `curl http://127.0.0.1:8765/api/v1/sample/hello` returns `{"message":"hello from Windows"}` |
 | Other working directory | Start the exe from another directory; same result |
 | Library missing | Rename the DLL; the exe prints `Fatal:` with the expected path, no READY, exit code 1 |
@@ -225,9 +232,9 @@ There is no automated test target. Verification is manual, with `Tool/run-backen
 - [A provider interface changes and `kPluginAbiVersion` is not bumped] → undefined behavior instead of a
   clean error. Mitigation: the constant sits next to the interfaces in `src/providers/` with a comment
   stating the rule; host and plugin are rebuilt together anyway.
-- [Linux and macOS code is never compiled in this change] → it may not build. Mitigation: those tasks
-  are marked "written, not built"; the OS-specific surface is kept to `DynamicLibrary`,
-  `ExecutablePath` and the plugin files.
+- [macOS code is never compiled in this change] → it may not build. Mitigation: those tasks are marked
+  "written, not built"; the POSIX loader is already built on Linux, so the macOS-only surface is kept
+  to `ExecutablePath` and the plugin files.
 - [DLL planting in the executable directory] → a malicious `systemlens_platform.dll` placed there is
   loaded. Accepted: whoever can write to the executable directory can already replace the executable.
 - [The executable and its DLL must ship together] → copying only the exe gives a fatal startup.
