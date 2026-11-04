@@ -1,0 +1,6 @@
+#!/bin/sh
+# Git pre-commit hook: check staged files are UTF-8 (no BOM) + CRLF.
+# Enabled per-repo by Tool/setup-hooks.ps1 (git config core.hooksPath Tool/githooks).
+root="$(git rev-parse --show-toplevel)"
+if command -v pwsh >/dev/null 2>&1; then ps=pwsh; else ps=powershell.exe; fi
+exec "$ps" -NoProfile -ExecutionPolicy Bypass -File "$root/Tool/githooks/pre-commit.ps1"

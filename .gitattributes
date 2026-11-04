@@ -1,0 +1,4 @@
+# Store files byte-for-byte: no EOL conversion (overrides core.autocrlf).
+# Text files must be UTF-8 (no BOM) + CRLF in both the repo and the working tree;
+# see Tool/check_utf8.ps1, Tool/check_crlf.ps1 and Tool/githooks/pre-commit.
+* -text
