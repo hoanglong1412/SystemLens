@@ -14,6 +14,9 @@
 
 #include <cstdint>
 
+// No CPU or system info provider on macOS yet: their entry points are not exported, so the host sees
+// the providers as unavailable and the /api/v1/cpu/* and /api/v1/system/* endpoints answer 501.
+
 /**
  * @brief Report the ABI version this plugin was built with.
  * @return kPluginAbiVersion.

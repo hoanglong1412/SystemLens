@@ -1,0 +1,251 @@
+/*
+ * File : components.css
+ * Brief: Reusable UI pieces: buttons, info icon + tooltip, cards, plots, LED gauges, metrics, legend.
+ */
+
+/* ---- Buttons ---- */
+.btn {
+  box-sizing: border-box;
+  border: none;
+  border-radius: 4px;
+  background: var(--bg-raised);
+  color: var(--text);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.btn--small {
+  height: 23px;
+  padding: 0 12px;
+  font-size: 11px;
+  line-height: 13px;
+}
+
+.btn--icon {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+}
+
+.btn--link {
+  height: 27px;
+  padding: 0;
+  border: 1px solid var(--border);
+  color: var(--accent);
+  font-size: 12px;
+  line-height: 15px;
+}
+
+/* Temporary button that switches between screens (not part of the Figma design). */
+.view-toggle {
+  margin-top: 6px;
+}
+
+/* ---- Info icon + tooltip ---- */
+.info-icon {
+  display: inline-flex;
+  flex: none;
+  width: 16px;
+  height: 16px;
+  cursor: help;
+  outline: none;
+}
+
+.info-icon svg {
+  display: block;
+}
+
+.info-icon__ring {
+  fill: none;
+  stroke: var(--text-muted);
+  stroke-width: 1.2;
+}
+
+.info-icon__glyph {
+  fill: var(--text-muted);
+}
+
+.info-icon:hover .info-icon__ring,
+.info-icon:focus-visible .info-icon__ring {
+  fill: var(--accent);
+  stroke: var(--accent);
+}
+
+.info-icon:hover .info-icon__glyph,
+.info-icon:focus-visible .info-icon__glyph {
+  fill: #ffffff;
+}
+
+.tooltip {
+  position: fixed;
+  z-index: 1000;
+  box-sizing: border-box;
+  width: 264px;
+  padding: 11px 12px 10px;
+  border: 1px solid var(--tooltip-border);
+  border-radius: 6px;
+  background: var(--tooltip-bg);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.tooltip--visible {
+  visibility: visible;
+}
+
+.tooltip__title {
+  margin-bottom: 5px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 16px;
+  color: var(--text);
+}
+
+.tooltip__body {
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--tooltip-text);
+}
+
+/* ---- Card ---- */
+.card {
+  position: relative;
+  box-sizing: border-box;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-surface);
+}
+
+/* Fixed height = text line height: the 16px info icon may overflow it, as in the design. */
+.card__title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 15px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 15px;
+  white-space: nowrap;
+}
+
+.card__title--small {
+  height: 13px;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 13px;
+  color: var(--text-muted);
+}
+
+.card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 15px;
+}
+
+.card__aside {
+  font-size: 12px;
+  line-height: 15px;
+  color: var(--text-muted);
+}
+
+/* ---- Plot ---- */
+.plot {
+  display: block;
+  background: var(--bg-plot);
+  color: var(--border);
+}
+
+.plot__grid {
+  stroke: var(--grid);
+  stroke-width: 1;
+}
+
+.plot__line {
+  fill: none;
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+
+.plot__area {
+  stroke: none;
+  fill-opacity: 0.3;
+}
+
+.plot__border {
+  fill: none;
+  stroke: currentColor;
+}
+
+/* ---- LED gauge ---- */
+.led {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 28px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 12px;
+  white-space: nowrap;
+}
+
+.led__bar {
+  display: block;
+  margin-top: 4px;
+}
+
+.led__value {
+  margin-top: 6px;
+}
+
+.led__frame {
+  fill: var(--bg-plot);
+  stroke: var(--border);
+}
+
+.led__seg {
+  fill: currentColor;
+  opacity: 0.12;
+}
+
+.led__seg--on {
+  opacity: 0.95;
+}
+
+/* ---- Legend ---- */
+.legend {
+  display: flex;
+  gap: 16px;
+}
+
+.legend__item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend__swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+/* ---- Metric (label above value) ---- */
+.metric {
+  height: 48px;
+}
+
+.metric__label {
+  font-size: 12px;
+  line-height: 15px;
+  color: var(--text-muted);
+}
+
+.metric__value {
+  margin-top: 4px;
+  font-size: 24px;
+  line-height: 29px;
+}

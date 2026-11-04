@@ -45,3 +45,25 @@ Frontend:
 cd frontend && npm install && npm start
 ```
 
+Linux (GCC or Clang, Ninja): the frontend starts `backend/build/systemlens-backend`.
+
+```bash
+cmake -S backend -B backend/build -G Ninja -DCMAKE_BUILD_TYPE=Debug
+cmake --build backend/build
+cd frontend && npm install && npm start
+```
+
+Tests (kept apart from the production code):
+
+```bash
+# Backend: GoogleTest (backend/tests/)
+cmake -S backend -B backend/build -DSYSTEMLENS_BUILD_TESTS=ON
+cmake --build backend/build            # Windows: add --config Debug
+ctest --test-dir backend/build --output-on-failure   # Windows: add -C Debug
+
+# Frontend: Playwright end-to-end on the Electron app + real backend (build the backend first)
+cd frontend
+npm run test:e2e                       # Linux without a display: xvfb-run -a npm run test:e2e
+npm run test:e2e:report                # HTML report with screenshots and videos
+```
+

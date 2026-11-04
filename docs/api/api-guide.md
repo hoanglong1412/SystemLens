@@ -4,7 +4,7 @@
 |---|---|
 | Contract | [`api/openapi.yaml`](../../api/openapi.yaml): the single source of truth for backend and frontend ([RQ001-NFR-01](../requirements/RQ001_CoreProject.md#rq001-nfr-01)). If this file and the YAML disagree, the YAML is right. |
 | Architecture | How the pieces fit: [RQ001_Architecture.md](../design/RQ001_CoreProject/RQ001_Architecture.md) |
-| Contract version | `0.1.0` (OpenAPI `3.1.0`) |
+| Contract version | `0.2.0` (OpenAPI `3.1.0`) |
 
 | Section | Content |
 |---|---|
@@ -79,7 +79,14 @@ timeout are already handled for every route.
 
 `ApiResponse.h` is the only place that builds responses. Status codes come from `api::status` (no magic
 numbers): `kOk` 200, `kNoContent` 204, `kBadRequest` 400, `kUnauthorized` 401, `kNotFound` 404,
-`kInternalServerError` 500.
+`kInternalServerError` 500, `kNotImplemented` 501, `kServiceUnavailable` 503.
+
+Errors mapped by controllers from service exceptions:
+
+| Exception | Status | `title` | Meaning |
+|---|---|---|---|
+| `services::FeatureUnavailableError` | 501 | `Not Implemented` | The platform plugin has no provider for this feature (e.g. CPU on macOS). |
+| `services::NotReadyError` | 503 | `Service Unavailable` | The data is not measured yet (first sampling interval); retry later. |
 
 Errors the server produces itself:
 
@@ -102,19 +109,28 @@ Errors the server produces itself:
 
 Security: every endpoint uses `bearerAuth` (see Authentication). Tag `sample`: sample endpoints that exercise
 the FE ↔ BE plumbing and serve as reference examples; registered only when the backend is built with
-`SYSTEMLENS_ENABLE_SAMPLE_API=ON`.
+`SYSTEMLENS_ENABLE_SAMPLE_API=ON`. Tag `cpu`: processor facts and live metrics. Tag `system`: machine identity.
 
 | Method | Path | `operationId` | Responses | Requirement |
 |---|---|---|---|---|
-| `GET` | `/api/v1/sample/hello` | `getSampleHello` | 200 `SampleHelloResponse`, 401, 500 | [RQ001-FR-01](../requirements/RQ001_CoreProject.md#rq001-fr-01) |
+| `GET` | `/api/v1/sample/hello` | `getSampleHello` | 200 `SampleHelloResponse`, 401, 500, 501 | [RQ001-FR-01](../requirements/RQ001_CoreProject.md#rq001-fr-01) |
+| `GET` | `/api/v1/cpu/info` | `getCpuInfo` | 200 `CpuInfo`, 401, 500, 501, 503 | [RQ002-FR-01](../requirements/RQ002_CpuPerformance.md#rq002-fr-01) |
+| `GET` | `/api/v1/cpu/metrics` | `getCpuMetrics` | 200 `CpuMetrics`, 401, 500, 501, 503 | [RQ002-FR-01](../requirements/RQ002_CpuPerformance.md#rq002-fr-01), [RQ002-FR-02](../requirements/RQ002_CpuPerformance.md#rq002-fr-02) |
+| `GET` | `/api/v1/system/info` | `getSystemInfo` | 200 `SystemInfo`, 401, 500, 501 | [RQ002-FR-03](../requirements/RQ002_CpuPerformance.md#rq002-fr-03) |
 
 Schemas:
 
 | Schema | Fields |
 |---|---|
-| `SampleHelloResponse` | `message` (string, required): always `"@@Hello world@@"`. Example: `{"message": "@@Hello world@@"}` |
+| `SampleHelloResponse` | `message` (string, required): greeting of the platform plugin, `"hello from Windows"` / `"hello from Linux"` / `"hello from MAC"`. |
+| `CpuInfo` | `model`, `sockets`, `cores`, `logicalProcessors`, `baseSpeedMhz`*, `maxSpeedMhz`*, `virtualization` (`enabled` / `disabled` / `unknown`), `cache` {`l1Bytes`*, `l2Bytes`*, `l3Bytes`*}, `countersSource` |
+| `CpuMetrics` | `sampleIntervalMs` (1000), `historyLength` (60), `current` (`CpuSnapshot`), `history` {`usagePercent`, `speedMhz`*, `temperatureCelsius`*, `userPercent`, `kernelPercent`}: arrays, oldest first |
+| `CpuSnapshot` | `usagePercent`, `perCoreUsagePercent[]`, `speedMhz`*, `temperatureCelsius`*, `processes`, `threads`, `handles`*, `uptimeSeconds`, `bootTime` (RFC 3339 UTC), `breakdown` {`userPercent`, `kernelPercent`, `dpcPercent`, `interruptPercent`, `idlePercent`}, `scheduler` {`contextSwitchesPerSec`*, `interruptsPerSec`*, `systemCallsPerSec`*, `dpcsPerSec`*}, `topProcesses[]` (≤ 10: `pid`, `name`, `cpuPercent`, `memoryBytes`) |
+| `SystemInfo` | `hostName`, `osName`, `osVersion`, `userName`, `platform` (`windows` / `linux` / `macos`) |
 | `Problem` | `type` (string, required), `title` (string, required), `status` (integer, required), `detail` (string, optional). Media type `application/problem+json`. |
 
-The contract also defines reusable responses `Unauthorized` (401), `NotFound` (404) and `InternalError` (500),
-all with the `Problem` schema. `NotFound` is not referenced by any endpoint; the backend returns it for any
+`*` = nullable: `null` when the platform does not report the value (fields are never omitted).
+
+The contract also defines reusable responses `Unauthorized` (401), `NotFound` (404), `InternalError` (500),
+`NotImplemented` (501) and `ServiceUnavailable` (503), all with the `Problem` schema. `NotFound` is not referenced by any endpoint; the backend returns it for any
 unknown path.

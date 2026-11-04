@@ -11,6 +11,10 @@
 #include <iostream>
 #include <string>
 
+#include "api/cpu/CpuController.h"
+#include "api/system/SystemInfoController.h"
+#include "services/system/SystemInfoService.h"
+
 #if SYSTEMLENS_ENABLE_SAMPLE_API
 #include "api/sample/SampleHelloController.h"
 #include "services/sample/SampleHelloService.h"
@@ -67,6 +71,8 @@ Application::Application(AppConfig config)
  */
 int Application::run()
 {
+    // Started before READY so the first metrics are ready about one interval after the frontend connects.
+    m_cpuMonitor->start();
     const int port = m_server.bind();
 
     if (m_config.devMode)
@@ -87,6 +93,7 @@ int Application::run()
         // so the thread has already finished reading stdin and join() returns immediately.
         m_parentWatchdog.join();
     }
+    m_cpuMonitor->stop();
     std::cerr << "[Application] stopped" << std::endl;
     return 0;
 }
@@ -99,6 +106,12 @@ void Application::registerControllers()
     m_controllers.push_back(std::make_unique<api::sample::SampleHelloController>(
         std::make_shared<services::sample::SampleHelloService>(m_platformPlugin.createHelloProvider())));
 #endif
+
+    m_cpuMonitor = std::make_shared<services::cpu::CpuMonitorService>(m_platformPlugin.createCpuProvider());
+    m_controllers.push_back(std::make_unique<api::cpu::CpuController>(m_cpuMonitor));
+
+    m_controllers.push_back(std::make_unique<api::system::SystemInfoController>(
+        std::make_shared<services::system::SystemInfoService>(m_platformPlugin.createSystemInfoProvider())));
 
     for (const auto& controller : m_controllers)
     {

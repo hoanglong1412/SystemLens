@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
   File : index.html
-  Brief: Single page of the renderer. Content is filled in by app.js.
+  Brief: Single page of the renderer. app.js builds the app shell and the screens inside #app.
   CSP  : connect-src allows the local backend (127.0.0.1, any port: the port is chosen at startup).
 -->
 <html lang="en">
@@ -13,9 +13,13 @@
     />
     <title>SystemLens</title>
     <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="styles/shell.css" />
+    <link rel="stylesheet" href="styles/components.css" />
+    <link rel="stylesheet" href="styles/views/hello.css" />
+    <link rel="stylesheet" href="styles/views/cpuPerformance.css" />
   </head>
   <body>
-    <h1 id="message">Connecting to backend...</h1>
+    <div id="app"></div>
     <script type="module" src="app.js"></script>
   </body>
 </html>

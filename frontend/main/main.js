@@ -10,6 +10,14 @@ const { BACKEND_GET_CONFIG } = require('./ipcChannels');
 
 const backend = new BackendProcess();
 
+/** Content size of the window: the size of the Figma frame the UI is designed for. */
+const WINDOW_WIDTH = 1440;
+const WINDOW_HEIGHT = 960;
+/** Height of the title bar drawn by the renderer (renderer/styles/shell.css). */
+const TITLE_BAR_HEIGHT = 36;
+const TITLE_BAR_COLOR = '#16171a';
+const TITLE_BAR_SYMBOL_COLOR = '#8e9099';
+
 /** Error from backend startup, reported to the renderer instead of a config. */
 let backendStartError = null;
 
@@ -18,8 +26,13 @@ let backendStartError = null;
  */
 function createWindow() {
   const win = new BrowserWindow({
-    width: 1000,
-    height: 700,
+    width: WINDOW_WIDTH,
+    height: WINDOW_HEIGHT,
+    useContentSize: true,
+    // The renderer draws its own title bar; the native minimize/maximize/close buttons are
+    // overlaid on its right end so they keep working.
+    titleBarStyle: 'hidden',
+    titleBarOverlay: { color: TITLE_BAR_COLOR, symbolColor: TITLE_BAR_SYMBOL_COLOR, height: TITLE_BAR_HEIGHT },
     webPreferences: {
       preload: path.join(__dirname, '..', 'preload', 'preload.js'),
       contextIsolation: true,

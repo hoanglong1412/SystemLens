@@ -28,3 +28,8 @@ npm-debug.log*
 # ---- OS ----
 .DS_Store
 Thumbs.db
+
+# ---- Test output ----
+frontend/tests/e2e/results/
+frontend/tests/e2e/report/
+Testing/

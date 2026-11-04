@@ -12,7 +12,9 @@
 #pragma once
 
 #include "platform/DynamicLibrary.h"
+#include "providers/cpu/ICpuProvider.h"
 #include "providers/sample/IHelloProvider.h"
+#include "providers/system/ISystemInfoProvider.h"
 
 #include <filesystem>
 #include <memory>
@@ -25,6 +27,8 @@ public:
     explicit PlatformPlugin(const std::filesystem::path& libraryPath);
 
     std::shared_ptr<const providers::sample::IHelloProvider> createHelloProvider() const;
+    std::shared_ptr<providers::cpu::ICpuProvider> createCpuProvider() const;
+    std::shared_ptr<const providers::system::ISystemInfoProvider> createSystemInfoProvider() const;
 
 private:
     // shared_ptr: every provider deleter keeps a copy, so the library is unloaded only after the

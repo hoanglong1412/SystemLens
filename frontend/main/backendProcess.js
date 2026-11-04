@@ -21,14 +21,19 @@ const DEFAULT_HOST = '127.0.0.1';
 
 /**
  * Locate the backend executable.
- * SYSTEMLENS_BACKEND_EXE overrides the default, which is the Debug build of the dev tree.
- * @returns {string} Absolute path to systemlens-backend.exe.
+ * SYSTEMLENS_BACKEND_EXE overrides the default, which is the Debug build of the dev tree:
+ *  - Windows (Visual Studio, multi-config): backend/build/Debug/systemlens-backend.exe
+ *  - Linux (single-config generator such as Ninja / Makefiles): backend/build/systemlens-backend
+ * @returns {string} Absolute path to the backend executable.
  */
 function resolveBackendExePath() {
   if (process.env.SYSTEMLENS_BACKEND_EXE) {
     return process.env.SYSTEMLENS_BACKEND_EXE;
   }
-  return path.join(__dirname, '..', '..', 'backend', 'build', 'Debug', 'systemlens-backend.exe');
+  const buildDir = path.join(__dirname, '..', '..', 'backend', 'build');
+  return process.platform === 'win32'
+    ? path.join(buildDir, 'Debug', 'systemlens-backend.exe')
+    : path.join(buildDir, 'systemlens-backend');
 }
 
 /** Owns one backend child process and the connection info it reported. */

@@ -17,6 +17,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 option(SYSTEMLENS_ENABLE_SAMPLE_API "Register the /api/v1/sample/* endpoints" ON)
+option(SYSTEMLENS_BUILD_TESTS "Build the GoogleTest target systemlens_tests (backend/tests)" OFF)
 
 # -----------------------------------------------------------------------------
 # Target platform: selects the host-side OS files and the plugin directory
@@ -77,6 +78,12 @@ add_library(systemlens_core STATIC
     src/platform/PlatformPlugin.cpp
     src/platform/${SYSTEMLENS_LOADER_DIR}/DynamicLibrary.cpp
     src/platform/${SYSTEMLENS_PLATFORM}/ExecutablePath.cpp
+    src/api/cpu/CpuController.cpp
+    src/api/cpu/CpuJson.cpp
+    src/api/system/SystemInfoController.cpp
+    src/services/cpu/CpuMetricsCalculator.cpp
+    src/services/cpu/CpuMonitorService.cpp
+    src/services/system/SystemInfoService.cpp
 )
 
 if(SYSTEMLENS_ENABLE_SAMPLE_API)
@@ -124,17 +131,19 @@ endif()
 # Links only the provider contract (no httplib, server or services). Host and plugin must be built
 # in this same tree and configuration: they share C++ types across the boundary (PluginAbi.h).
 # -----------------------------------------------------------------------------
-add_library(systemlens_platform SHARED
-    plugins/${SYSTEMLENS_PLATFORM}/PluginEntry.cpp
-)
-
-if(SYSTEMLENS_ENABLE_SAMPLE_API)
-    file(GLOB SYSTEMLENS_PLUGIN_HELLO_SOURCES CONFIGURE_DEPENDS
-        plugins/${SYSTEMLENS_PLATFORM}/*HelloProvider.cpp)
-    target_sources(systemlens_platform PRIVATE ${SYSTEMLENS_PLUGIN_HELLO_SOURCES})
+# Every .cpp of plugins/<os>/ belongs to the plugin: adding a provider is adding files.
+file(GLOB SYSTEMLENS_PLUGIN_SOURCES CONFIGURE_DEPENDS plugins/${SYSTEMLENS_PLATFORM}/*.cpp)
+if(NOT SYSTEMLENS_ENABLE_SAMPLE_API)
+    list(FILTER SYSTEMLENS_PLUGIN_SOURCES EXCLUDE REGEX "HelloProvider\\.cpp$")
 endif()
+add_library(systemlens_platform SHARED ${SYSTEMLENS_PLUGIN_SOURCES})
 
 target_link_libraries(systemlens_platform PRIVATE systemlens_provider_api)
+if(WIN32)
+    # ntdll: NtQuerySystemInformation, RtlGetVersion; pdh: performance counters; advapi32: registry, user name.
+    target_link_libraries(systemlens_platform PRIVATE ntdll pdh advapi32)
+    target_compile_definitions(systemlens_platform PRIVATE _WIN32_WINNT=0x0A00 WIN32_LEAN_AND_MEAN NOMINMAX UNICODE _UNICODE)
+endif()
 
 target_compile_definitions(systemlens_platform PRIVATE
     SYSTEMLENS_PLUGIN_BUILD
@@ -160,3 +169,11 @@ add_executable(systemlens-backend src/main.cpp)
 target_link_libraries(systemlens-backend PRIVATE systemlens_core)
 # Runtime-only dependency: building the executable also builds the plugin, without linking it.
 add_dependencies(systemlens-backend systemlens_platform)
+
+# -----------------------------------------------------------------------------
+# Tests (GoogleTest), kept apart from production code in backend/tests/
+# -----------------------------------------------------------------------------
+if(SYSTEMLENS_BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
+endif()

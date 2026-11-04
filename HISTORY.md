@@ -19,6 +19,54 @@ Mẫu entry:
 - AI: đề xuất / kết quả / vấn đề phát hiện
 -->
 
+## 2026-11-05 — Màn hình Performance › CPU chạy dữ liệu thật trên Windows và Linux, kèm test GoogleTest + Playwright
+
+**Lý do:** Màn hình CPU (nhánh `feature/int_cpu_preformance`) mới chỉ hiển thị số liệu cố định theo Figma. Backend
+đã có platform plugin (change `add-platform-plugin`) nhưng chưa có provider đọc dữ liệu OS. Commit này nối hai phần:
+backend đo CPU thật trên Windows / Linux, frontend hiển thị và làm mới mỗi giây, có bộ test riêng cho BE và FE.
+
+**Nội dung:**
+- Nền: fast-forward lên commit `Implement add-platform-plugin` (nhánh `ccr-c7934e74-13xlat`, nối tiếp
+  `feature/core_project`); lấy phần frontend + `evi/` + `docs/ui-design/` của nhánh `feature/int_cpu_preformance`
+  (bỏ thay đổi comment `apiClient.js` trỏ tới file docs cũ).
+- Spec trước: OpenSpec change `add-cpu-performance` (proposal, 3 spec `cpu-performance` / `system-info` /
+  `cpu-performance-view`, design D1–D7, tasks).
+- Backend:
+  - Provider mới `ICpuProvider` (bộ đếm tích luỹ) và `ISystemInfoProvider`; ABI plugin 1 → 2;
+    `PlatformPlugin::createProvider<T>` dùng chung.
+  - `CpuMetricsCalculator` (hàm thuần: % thời gian, usage, rate, xử lý tràn bộ đếm 32-bit, top 10 process theo
+    pid + tên), `CpuMonitorService` (thread lấy mẫu 1 s, condition variable, lịch sử 60 mẫu), `SystemInfoService`.
+  - `CpuController` (`/api/v1/cpu/info`, `/api/v1/cpu/metrics`), `SystemInfoController` (`/api/v1/system/info`),
+    `CpuJson`; `NotReadyError` → 503, `FeatureUnavailableError` → 501.
+  - Plugin Linux: `/proc/stat`, `/proc/cpuinfo`, `/proc/<pid>/stat|statm`, `/proc/uptime`, sysfs (topology,
+    cache, cpufreq, hwmon, thermal), `uname`, `/etc/os-release`; parser thuần tách riêng (`LinuxProcFs`).
+  - Plugin Windows: `NtQuerySystemInformation` (CPU times, process), PDH (context switch, interrupt, syscall, DPC,
+    % Processor Performance, thermal zone), registry, `GetLogicalProcessorInformationEx`, `RtlGetVersion`.
+  - macOS: chưa có provider → các endpoint CPU/system trả 501.
+- `api/openapi.yaml` 0.2.0: 3 endpoint mới + schema `CpuInfo`, `CpuMetrics`, `CpuSnapshot`, `SystemInfo`, response 503.
+- Frontend: `cpuApi.js`, `systemApi.js`, `format.js`, `cpuPerformanceModel.js`, `shellModel.js`,
+  `perCoreHistory.js`; view CPU và app shell dựng khung một lần, `update()` chỉ điền lại dữ liệu (tooltip không bị
+  kẹt); sub-tab Per-core; màn CPU là màn mặc định; polling 1 s; `backendProcess.js` có đường dẫn exe Linux.
+  Memory / Disk / Network / GPU vẫn là mock (ngoài phạm vi).
+- Test riêng biệt: `backend/tests/` (GoogleTest, option `SYSTEMLENS_BUILD_TESTS`, 52 test trên Linux);
+  `frontend/tests/e2e/` (Playwright `_electron`, 10 test, quay video + chụp ảnh mỗi test), script `test:e2e`.
+- Docs: `RQ002_CpuPerformance.md`, `RQ002_Architecture.md`, cập nhật `api-guide.md`, `docs/README.md`, `README.md`.
+- `evi/e2e/`: 3 ảnh chụp từ Playwright trên Linux (overview, khi có tải CPU, per-core).
+
+**Trao đổi user ↔ AI:**
+- User: dựa trên core ở nhánh core project + design ở nhánh `init_cpu_performance`, implement màn CPU chạy dữ liệu
+  thật trên Windows và Linux (macOS chưa cần); test BE bằng Google Test, FE bằng Playwright có capture + record
+  video; phiên này không cần confirm, được cài thêm công cụ; gửi lại ảnh và video Playwright.
+- User: nếu chạm limit 5 tiếng thì tự tiếp tục sau khi reset (5h20). AI đặt lịch tự tiếp tục phiên lúc 05:21.
+- AI chọn nền là commit implement platform plugin (đúng hướng design của core cho code riêng OS) thay vì viết lại.
+- AI cài thêm: `@playwright/test@1.63.0` (devDependency, cùng bản Playwright có sẵn), MinGW-w64 và Wine (chỉ trên
+  máy cloud, để build chéo và chạy thử bản Windows). Không cài được PowerShell (bị chặn) → kiểm UTF-8/CRLF bằng
+  script Python tương đương `Tool/check_*.ps1`.
+- Test phát hiện lỗi thật: hàm `trim` không bỏ `\n` nên mọi file sysfs đọc lỗi (cache, topology, nhiệt độ) → đã sửa.
+- Kiểm chứng: Linux build không warning, `ctest` 52/52, Playwright 10/10; Windows build chéo không warning,
+  `systemlens_tests.exe` 36/36 dưới Wine, backend Windows trả đủ 3 endpoint dưới Wine (PDH của Wine không có dữ liệu
+  → null). Chưa chạy trên máy Windows thật (task 7.4).
+
 ## 2026-11-04 — Implement add-platform-plugin: platform plugin + hello provider (Linux đã kiểm chứng)
 
 **Lý do:** Thực hiện change `add-platform-plugin` (`openspec apply`): thêm tầng Provider dưới dạng thư viện

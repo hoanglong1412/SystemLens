@@ -17,7 +17,9 @@
 #pragma once
 
 // Relative include: the plugin only has src/providers/ on its include path, the host has src/.
+#include "cpu/ICpuProvider.h"
 #include "sample/IHelloProvider.h"
+#include "system/ISystemInfoProvider.h"
 
 #include <cstdint>
 
@@ -36,17 +38,25 @@
 namespace systemlens::providers {
 
 /** ABI version of the provider interfaces and entry points declared here. */
-inline constexpr std::uint32_t kPluginAbiVersion = 1;
+inline constexpr std::uint32_t kPluginAbiVersion = 2;
 
 /** Entry point names, used by the host to look up the symbols the plugin exports. */
 inline constexpr const char* kAbiVersionEntryPoint = "systemlens_plugin_abi_version";
 inline constexpr const char* kCreateHelloProviderEntryPoint = "systemlens_create_hello_provider";
 inline constexpr const char* kDestroyHelloProviderEntryPoint = "systemlens_destroy_hello_provider";
+inline constexpr const char* kCreateCpuProviderEntryPoint = "systemlens_create_cpu_provider";
+inline constexpr const char* kDestroyCpuProviderEntryPoint = "systemlens_destroy_cpu_provider";
+inline constexpr const char* kCreateSystemInfoProviderEntryPoint = "systemlens_create_system_info_provider";
+inline constexpr const char* kDestroySystemInfoProviderEntryPoint = "systemlens_destroy_system_info_provider";
 
 /** Entry point signatures, used by the host to cast looked-up symbols. */
 using AbiVersionFn = std::uint32_t (*)() noexcept;
 using CreateHelloProviderFn = sample::IHelloProvider* (*)() noexcept;
 using DestroyHelloProviderFn = void (*)(sample::IHelloProvider*) noexcept;
+using CreateCpuProviderFn = cpu::ICpuProvider* (*)() noexcept;
+using DestroyCpuProviderFn = void (*)(cpu::ICpuProvider*) noexcept;
+using CreateSystemInfoProviderFn = system::ISystemInfoProvider* (*)() noexcept;
+using DestroySystemInfoProviderFn = void (*)(system::ISystemInfoProvider*) noexcept;
 
 } // namespace systemlens::providers
 
@@ -70,5 +80,32 @@ SYSTEMLENS_PLUGIN_EXPORT systemlens::providers::sample::IHelloProvider* systemle
  * @param provider Provider to destroy; nullptr is ignored.
  */
 SYSTEMLENS_PLUGIN_EXPORT void systemlens_destroy_hello_provider(systemlens::providers::sample::IHelloProvider* provider) noexcept;
+
+/**
+ * @brief Create the CPU provider of this platform. Optional: a plugin without CPU support does not
+ *        export it (the CPU endpoints then answer 501).
+ * @return New provider owned by the caller (release with systemlens_destroy_cpu_provider),
+ *         or nullptr on failure.
+ */
+SYSTEMLENS_PLUGIN_EXPORT systemlens::providers::cpu::ICpuProvider* systemlens_create_cpu_provider() noexcept;
+
+/**
+ * @brief Destroy a provider created by systemlens_create_cpu_provider.
+ * @param provider Provider to destroy; nullptr is ignored.
+ */
+SYSTEMLENS_PLUGIN_EXPORT void systemlens_destroy_cpu_provider(systemlens::providers::cpu::ICpuProvider* provider) noexcept;
+
+/**
+ * @brief Create the system info provider of this platform. Optional, like the CPU provider.
+ * @return New provider owned by the caller (release with systemlens_destroy_system_info_provider),
+ *         or nullptr on failure.
+ */
+SYSTEMLENS_PLUGIN_EXPORT systemlens::providers::system::ISystemInfoProvider* systemlens_create_system_info_provider() noexcept;
+
+/**
+ * @brief Destroy a provider created by systemlens_create_system_info_provider.
+ * @param provider Provider to destroy; nullptr is ignored.
+ */
+SYSTEMLENS_PLUGIN_EXPORT void systemlens_destroy_system_info_provider(systemlens::providers::system::ISystemInfoProvider* provider) noexcept;
 
 } // extern "C"
