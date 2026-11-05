@@ -19,6 +19,20 @@ Mẫu entry:
 - AI: đề xuất / kết quả / vấn đề phát hiện
 -->
 
+## 2026-11-06 — Thêm quy ước ưu tiên modern C++
+
+**Lý do:** Dự án dùng để luyện C++, nên cần ghi rõ ưu tiên modern C++ khi phù hợp, nhưng không gượng ép ở những
+chỗ khó áp dụng.
+
+**Nội dung:**
+- `CLAUDE.md`: thêm mục 5 vào Coding convention, ưu tiên modern C++ trong phạm vi chuẩn C++ đặt ở CMake; không ép
+  dùng khi code khó đọc hơn hoặc không hợp ràng buộc (ví dụ API của OS, ranh giới `extern "C"`).
+
+**Trao đổi user ↔ AI:**
+- User yêu cầu thêm quy ước prefer modern C++ nếu có thể, trường hợp khó thì không cần gượng ép.
+- AI thêm mục 5, kèm ví dụ về API của OS và ranh giới `extern "C"`.
+- Kiểm tra: định dạng UTF-8/CRLF hợp lệ.
+
 ## 2026-11-06 — Ghi các quyết định khi review design của add-platform-plugin
 
 **Lý do:** Review `design.md` phát sinh các điểm cần giữ lại để không phải bàn lại khi implement: code lặp khi có

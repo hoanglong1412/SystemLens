@@ -28,3 +28,5 @@ and practice spec-driven design with a human in the loop.
 4. **Clean, maintainable, extensible code**: single responsibility, depend on interfaces injected via
    constructor, respect the layering (HttpServer → Controller → Service → Provider), no magic numbers,
    explicit error handling, extend by adding files rather than modifying infrastructure.
+5. **Prefer modern C++** when it fits, within the C++ standard set in CMake. Do not force it when it makes
+   the code harder to read or does not fit the constraint (for example OS APIs or `extern "C"` boundaries).
