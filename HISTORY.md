@@ -19,6 +19,31 @@ Mẫu entry:
 - AI: đề xuất / kết quả / vấn đề phát hiện
 -->
 
+## 2026-11-06 — Ghi các quyết định khi review design của add-platform-plugin
+
+**Lý do:** Review `design.md` phát sinh các điểm cần giữ lại để không phải bàn lại khi implement: code lặp khi có
+thêm provider, automated test để sau, và lỗi sai tên entry point chưa được chặn lúc build.
+
+**Nội dung:**
+- `openspec/changes/add-platform-plugin/design.md`:
+  - D3: ghi code lặp ở host (`PlatformPlugin`) và plugin (`PluginEntry.cpp`) khi thêm provider; hiện chỉ có một
+    provider nên xem xét lại khi có từ hai provider trở lên.
+  - D7: ghi automated test để phát triển sau.
+  - Risks / Trade-offs: thêm rủi ro tên entry point lệch giữa host và plugin; tạm chưa xử lý, xem xét sửa sau.
+
+**Trao đổi user ↔ AI:**
+- User review design, nhờ AI dịch và giải thích các mục D1, D6, Risks / Trade-offs, vai trò các file trong
+  `platform/` và `plugins/windows/`, cách hoạt động của `kPluginAbiVersion`.
+- User hỏi có tự động create/destroy được không: AI giải thích `destroy` đã tự chạy qua deleter của `shared_ptr`,
+  phần còn thủ công là code lặp khi thêm provider; đề xuất template ở host và macro ở plugin khi có provider thứ hai.
+- AI ghi 3 alternative vào D3; user yêu cầu rút gọn, sau đó chỉ giữ một câu về code lặp và bỏ hai alternative còn lại.
+- User chốt automated test là việc phát triển sau và yêu cầu ghi vào D7.
+- User hỏi trường hợp plugin đổi interface hoặc đổi tên hàm mà host không biết: AI giải thích `extern "C"` tìm theo
+  tên, hàm ảo gọi theo vị trí vtable, nên sai chữ ký không tự báo lỗi; sai tên entry point chỉ lộ ra lúc chạy.
+- AI đề xuất export một struct con trỏ hàm để trình biên dịch kiểm tra tên và chữ ký. User chưa làm, chỉ yêu cầu
+  ghi rủi ro và xem xét sửa sau, không ghi chi tiết cách sửa.
+- Kiểm tra: `openspec validate add-platform-plugin` hợp lệ; định dạng UTF-8/CRLF hợp lệ.
+
 ## 2026-11-04 — OpenSpec change add-platform-plugin: proposal, specs, design
 
 **Lý do:** Backend cần một chỗ cho code riêng của từng OS (process, CPU… sau này), nhưng chưa có tầng Provider

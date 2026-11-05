@@ -140,6 +140,9 @@ Alternative considered: a pure C API (struct of function pointers, caller-owned 
 to compiler and CRT differences but needs an adapter per provider. Rejected because host and plugin are
 always built together; the constraint above covers the risk.
 
+Alternative considered: Code repeats in the host (`PlatformPlugin`) and the plugin (`PluginEntry.cpp`) for each new provider, but
+there is only one provider now; reconsider when there are two or more.
+
 ### D4. Locating and loading the library
 
 - The file name comes from CMake: `systemlens_core` gets
@@ -217,6 +220,8 @@ There is no automated test target. Verification is manual, with `Tool/run-backen
 | Provider unavailable | Temporary local edit making `create_hello_provider` return `nullptr`, not committed; warning on stderr, READY printed, endpoint returns 501 |
 | Shutdown | Close stdin (or quit the app); process exits with code 0 |
 
+Alternative considered: automated tests. Deferred: they will be developed later.
+
 ## Risks / Trade-offs
 
 - [Host and plugin built with different configurations or CRTs (for example a Release plugin copied next
@@ -234,6 +239,8 @@ There is no automated test target. Verification is manual, with `Tool/run-backen
   Mitigation: the error names the expected path; packaging is out of scope.
 - [501 handling is per controller] → each future controller repeats a small `try/catch`. Accepted for
   now (D5).
+- [An entry point name differs between host and plugin (typo, or renamed on one side only)] → not caught
+  at build time; the symbol lookup fails at runtime. Not handled for now; consider a fix later.
 
 ## Migration Plan
 
