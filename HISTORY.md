@@ -19,6 +19,26 @@ Mẫu entry:
 - AI: đề xuất / kết quả / vấn đề phát hiện
 -->
 
+## 2026-11-06 — Thêm tasks cho OpenSpec change add-platform-plugin
+
+**Lý do:** Design đã review xong, cần danh sách task để implement. Đây là artifact cuối cùng của change, hoàn tất
+phần planning trước khi viết code theo quy tắc spec first.
+
+**Nội dung:**
+- `openspec/changes/add-platform-plugin/tasks.md`: 21 task trong 7 nhóm: provider contract và phát hiện nền tảng,
+  plugin Windows, host loader, tích hợp endpoint sample, code Linux/macOS (viết, không build), kiểm chứng trên
+  Windows, cập nhật `docs/`.
+- Change đạt 4/4 artifact (`proposal`, `specs`, `design`, `tasks`), chưa có code.
+
+**Trao đổi user ↔ AI:**
+- User chạy `/openspec-continue-change`; AI đọc lại proposal, specs, design và tạo `tasks.md`.
+- AI bổ sung vào nhóm kiểm chứng các kịch bản có trong spec nhưng chưa có ở bảng D7: DLL trùng tên ở thư mục hiện
+  tại, thiếu entry point ABI, thiếu entry point `create`, frontend báo lỗi khởi động.
+- AI nêu kịch bản "Other providers keep working" chưa kiểm chứng được vì mới có một provider, nên không đưa vào task.
+- AI giữ cập nhật `docs/` ở nhóm cuối theo proposal và design, dù hướng dẫn OpenSpec khuyên không dồn tài liệu về cuối.
+- AI làm rõ ở task 3.3: thiếu `create` hoặc `destroy` đều cảnh báo và trả về con trỏ rỗng.
+- Kiểm tra: `openspec validate add-platform-plugin` hợp lệ; định dạng UTF-8/CRLF hợp lệ.
+
 ## 2026-11-06 — Thêm quy ước ưu tiên modern C++
 
 **Lý do:** Dự án dùng để luyện C++, nên cần ghi rõ ưu tiên modern C++ khi phù hợp, nhưng không gượng ép ở những
