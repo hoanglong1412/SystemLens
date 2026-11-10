@@ -3,9 +3,9 @@
 openapi: 3.1.0
 info:
   title: SystemLens Backend API
-  version: 0.1.0
+  version: 0.2.0
   description: >
-    Local HTTP API served by systemlens-backend.exe on 127.0.0.1.
+    Local HTTP API served by systemlens-backend (systemlens-backend.exe on Windows) on 127.0.0.1.
     The port is chosen at startup and reported to the Electron main process
     through the "SYSTEMLENS_READY {json}" stdout line.
 servers:
@@ -21,7 +21,61 @@ tags:
     description: >
       Sample endpoints: exercise the FE <-> BE plumbing and serve as reference examples
       for real APIs. Registered only when the backend is built with SYSTEMLENS_ENABLE_SAMPLE_API=ON.
+  - name: system
+    description: Machine identity and the always-visible quick stats shown by the app shell.
+  - name: performance
+    description: >
+      Live performance data of the Performance tab. Values come from a backend sampler that reads
+      the operating system once per second and keeps the last 60 seconds of history.
 paths:
+  /api/v1/system/overview:
+    get:
+      tags: [system]
+      operationId: getSystemOverview
+      summary: Machine identity, uptime and quick stats for the app shell (header, tabs, status bar).
+      responses:
+        "200":
+          description: Current overview.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SystemOverview"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/v1/performance/resources:
+    get:
+      tags: [performance]
+      operationId: getPerformanceResources
+      summary: Every monitored resource (CPU, memory, disks, network adapters, GPUs) with its 60-second history.
+      responses:
+        "200":
+          description: Resource list in display order.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PerformanceResources"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/v1/performance/cpu:
+    get:
+      tags: [performance]
+      operationId: getCpuPerformance
+      summary: Everything shown by the Performance > CPU screen.
+      responses:
+        "200":
+          description: Current CPU performance data.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CpuPerformance"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
   /api/v1/sample/hello:
     get:
       tags: [sample]
@@ -56,6 +110,293 @@ components:
         message:
           type: string
           description: Always "@@Hello world@@".
+    PercentHistory:
+      type: array
+      description: >
+        Samples in percent (0..100), oldest first, one per sample interval. At most 61 items
+        (60 seconds); shorter right after the backend started.
+      items:
+        type: number
+    SystemOverview:
+      type: object
+      required:
+        [machine, bootTime, uptimeSeconds, sampleIntervalMs, processCount, serviceCount, cpuPercent,
+         memoryPercent, diskPercent, network, topMemoryProcess]
+      properties:
+        machine:
+          $ref: "#/components/schemas/MachineInfo"
+        bootTime:
+          type: string
+          format: date-time
+          description: When the operating system booted (UTC, RFC 3339).
+        uptimeSeconds:
+          type: integer
+          description: Seconds since bootTime.
+        sampleIntervalMs:
+          type: integer
+          description: How often the backend samples the operating system (1000).
+        processCount:
+          type: integer
+        serviceCount:
+          type: [integer, "null"]
+          description: Number of installed services; null when the platform provider cannot count them.
+        cpuPercent:
+          type: number
+          description: Total CPU usage over the last sample interval (0..100).
+        memoryPercent:
+          type: number
+          description: Physical memory in use (0..100).
+        diskPercent:
+          type: [number, "null"]
+          description: Active time of the busiest disk over the last interval; null when there is no disk data.
+        network:
+          $ref: "#/components/schemas/NetworkThroughput"
+        topMemoryProcess:
+          oneOf:
+            - $ref: "#/components/schemas/TopMemoryProcess"
+            - type: "null"
+          description: Process using the most memory; null when the process list is empty.
+    MachineInfo:
+      type: object
+      required: [hostName, osName, osVersion, architecture, userName, sessionName]
+      properties:
+        hostName:
+          type: string
+        osName:
+          type: string
+          description: Product name, e.g. "Windows 10 Home" or "Ubuntu 24.04.1 LTS".
+        osVersion:
+          type: string
+          description: Windows - major.minor.build; Linux - kernel release.
+        architecture:
+          type: string
+          description: e.g. "x64", "arm64".
+        userName:
+          type: string
+          description: User the backend runs as.
+        sessionName:
+          type: string
+          description: Windows - window station name of the session ("Console", "RDP-Tcp#0"); Linux - session type ("x11", "wayland", "tty").
+    NetworkThroughput:
+      type: object
+      required: [sendBitsPerSecond, receiveBitsPerSecond]
+      properties:
+        sendBitsPerSecond:
+          type: number
+        receiveBitsPerSecond:
+          type: number
+    TopMemoryProcess:
+      type: object
+      required: [name, memoryBytes]
+      properties:
+        name:
+          type: string
+        memoryBytes:
+          type: integer
+    PerformanceResources:
+      type: object
+      required: [resources]
+      properties:
+        resources:
+          type: array
+          description: Display order - cpu, memory, disks, network adapters, GPUs.
+          items:
+            $ref: "#/components/schemas/PerformanceResource"
+    PerformanceResource:
+      type: object
+      description: One row of the resource sidebar. Fields that do not apply to the kind are null.
+      required:
+        [id, kind, name, description, percent, history, frequencyMhz, usedBytes, totalBytes,
+         sendBitsPerSecond, receiveBitsPerSecond, temperatureCelsius]
+      properties:
+        id:
+          type: string
+          description: Stable identifier, e.g. "cpu", "memory", "disk0", "net-eth0", "gpu0".
+        kind:
+          type: string
+          enum: [cpu, memory, disk, ethernet, wifi, gpu]
+        name:
+          type: string
+          description: "Display name, e.g. \"CPU\", \"Disk 0 (C: E:)\", \"Wi-Fi\"."
+        description:
+          type: [string, "null"]
+          description: Disk - media type ("SSD", "HDD"); network - adapter description; GPU - adapter model.
+        percent:
+          type: [number, "null"]
+          description: >
+            Current load (0..100): CPU usage, memory in use, disk active time, GPU utilization.
+            Null for network adapters and when the value is not available.
+        history:
+          $ref: "#/components/schemas/PercentHistory"
+          description: >
+            Sparkline. Network adapters - total throughput scaled to the peak of the window
+            (at least 100 kbit/s full scale). Unavailable values are sent as 0.
+        frequencyMhz:
+          type: [number, "null"]
+          description: cpu only - current clock.
+        usedBytes:
+          type: [integer, "null"]
+          description: memory only.
+        totalBytes:
+          type: [integer, "null"]
+          description: memory only.
+        sendBitsPerSecond:
+          type: [number, "null"]
+          description: ethernet / wifi only.
+        receiveBitsPerSecond:
+          type: [number, "null"]
+          description: ethernet / wifi only.
+        temperatureCelsius:
+          type: [number, "null"]
+          description: gpu only, when a sensor is readable.
+    CpuPerformance:
+      type: object
+      required:
+        [info, usagePercent, frequencyMhz, frequencyPercent, temperatureCelsius, processCount, threadCount,
+         handleCount, bootTime, uptimeSeconds, history, topProcesses, timeBreakdown, scheduler]
+      properties:
+        info:
+          $ref: "#/components/schemas/CpuInfo"
+        usagePercent:
+          type: number
+          description: Total CPU usage over the last sample interval (0..100).
+        frequencyMhz:
+          type: [number, "null"]
+          description: Current clock averaged over all logical processors.
+        frequencyPercent:
+          type: [number, "null"]
+          description: frequencyMhz relative to the highest clock known (maximum reported by the OS or observed), 0..100.
+        temperatureCelsius:
+          type: [number, "null"]
+          description: CPU package temperature; null when no sensor is readable (typical in virtual machines).
+        processCount:
+          type: integer
+        threadCount:
+          type: integer
+        handleCount:
+          type: [integer, "null"]
+          description: Windows - open handles; Linux - allocated file handles (/proc/sys/fs/file-nr).
+        bootTime:
+          type: string
+          format: date-time
+        uptimeSeconds:
+          type: integer
+        history:
+          $ref: "#/components/schemas/CpuHistory"
+        topProcesses:
+          type: array
+          description: Up to 10 processes with the highest CPU usage over the last interval, highest first.
+          items:
+            $ref: "#/components/schemas/CpuProcess"
+        timeBreakdown:
+          $ref: "#/components/schemas/CpuTimeBreakdown"
+        scheduler:
+          $ref: "#/components/schemas/SchedulerActivity"
+    CpuInfo:
+      type: object
+      required:
+        [model, sockets, cores, logicalProcessors, baseSpeedMhz, virtualization, l1CacheBytes, l2CacheBytes,
+         l3CacheBytes]
+      properties:
+        model:
+          type: string
+        sockets:
+          type: integer
+        cores:
+          type: integer
+        logicalProcessors:
+          type: integer
+        baseSpeedMhz:
+          type: [number, "null"]
+        virtualization:
+          type: string
+          enum: [enabled, disabled, unknown]
+        l1CacheBytes:
+          type: [integer, "null"]
+          description: Sum of all L1 data and instruction caches.
+        l2CacheBytes:
+          type: [integer, "null"]
+        l3CacheBytes:
+          type: [integer, "null"]
+    CpuHistory:
+      type: object
+      required: [usagePercent, frequencyPercent, temperatureCelsius]
+      properties:
+        usagePercent:
+          $ref: "#/components/schemas/PercentHistory"
+        frequencyPercent:
+          type: array
+          description: Same sample times as usagePercent; null where the clock was not available.
+          items:
+            type: [number, "null"]
+        temperatureCelsius:
+          type: array
+          description: Same sample times as usagePercent; null where the temperature was not available.
+          items:
+            type: [number, "null"]
+    CpuProcess:
+      type: object
+      required: [pid, name, cpuPercent, memoryBytes, isSelf]
+      properties:
+        pid:
+          type: integer
+        name:
+          type: string
+        cpuPercent:
+          type: number
+          description: Share of the total capacity of all logical processors (0..100).
+        memoryBytes:
+          type: integer
+          description: Windows - private working set; Linux - resident set size.
+        isSelf:
+          type: boolean
+          description: True for the backend itself and the process that started it (the SystemLens UI).
+    CpuTimeBreakdown:
+      type: object
+      description: How CPU time of the last interval was split, all cores together. The five percents add up to 100.
+      required: [userPercent, kernelPercent, dpcPercent, interruptPercent, idlePercent, history]
+      properties:
+        userPercent:
+          type: number
+        kernelPercent:
+          type: number
+          description: Kernel time excluding dpcPercent and interruptPercent.
+        dpcPercent:
+          type: number
+          description: Windows - DPC time; Linux - softirq time.
+        interruptPercent:
+          type: number
+          description: Hardware interrupt time.
+        idlePercent:
+          type: number
+          description: Linux - includes iowait and steal.
+        history:
+          type: object
+          required: [userPercent, kernelPercent]
+          properties:
+            userPercent:
+              $ref: "#/components/schemas/PercentHistory"
+            kernelPercent:
+              $ref: "#/components/schemas/PercentHistory"
+              description: Kernel + DPC + interrupt.
+    SchedulerActivity:
+      type: object
+      description: System-wide rates over the last interval; null when the platform does not expose the counter.
+      required: [contextSwitchesPerSecond, interruptsPerSecond, systemCallsPerSecond, dpcsPerSecond, source]
+      properties:
+        contextSwitchesPerSecond:
+          type: [number, "null"]
+        interruptsPerSecond:
+          type: [number, "null"]
+        systemCallsPerSecond:
+          type: [number, "null"]
+          description: Not available on Linux.
+        dpcsPerSecond:
+          type: [number, "null"]
+          description: Windows - DPCs queued; Linux - softirqs raised.
+        source:
+          type: string
+          description: Where the counters come from, e.g. "PDH \System, \Processor(_Total)" or "/proc/stat".
     Problem:
       type: object
       description: Error body (RFC 7807, media type application/problem+json).

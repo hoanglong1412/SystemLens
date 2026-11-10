@@ -1,7 +1,7 @@
 /**
  * @file    Application.h
- * @brief   Composition root of the backend: creates services and controllers, wires them
- *          into the HttpServer, performs the startup handshake and runs until shutdown.
+ * @brief   Composition root of the backend: creates providers, services and controllers, wires
+ *          them into the HttpServer, performs the startup handshake and runs until shutdown.
  *
  * Startup handshake (consumed by frontend/main/backendProcess.js):
  *   once the socket is bound, one line is written to stdout:
@@ -16,6 +16,7 @@
 #include "api/HttpServer.h"
 #include "api/IController.h"
 #include "app/AppConfig.h"
+#include "services/monitoring/MetricsCollector.h"
 
 #include <memory>
 #include <thread>
@@ -39,6 +40,7 @@ private:
 
     AppConfig m_config;
     // Declared before m_server so they are destroyed after it: the server's handlers point into them.
+    std::shared_ptr<services::monitoring::MetricsCollector> m_metrics;
     std::vector<std::unique_ptr<api::IController>> m_controllers;
     api::HttpServer m_server;
     std::thread m_parentWatchdog;

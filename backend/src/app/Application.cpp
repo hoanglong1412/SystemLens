@@ -4,6 +4,12 @@
  */
 #include "app/Application.h"
 
+#include "api/performance/PerformanceController.h"
+#include "api/system/SystemController.h"
+#include "providers/PlatformProviders.h"
+#include "services/performance/PerformanceService.h"
+#include "services/system/SystemOverviewService.h"
+
 #include <nlohmann/json.hpp>
 
 #include <iostream>
@@ -34,23 +40,27 @@ api::HttpServerOptions toServerOptions(const AppConfig& config)
 } // namespace
 
 /**
- * @brief Build the object graph. Does not open any socket yet.
+ * @brief Build the object graph. Does not open any socket or start any thread yet.
  * @param config Parsed startup configuration.
+ * @throws providers::ProviderError if a platform provider cannot initialize.
  */
 Application::Application(AppConfig config)
     : m_config(std::move(config))
+    , m_metrics(std::make_shared<services::monitoring::MetricsCollector>(providers::createPlatformProviders()))
     , m_server(toServerOptions(m_config))
 {
     registerControllers();
 }
 
 /**
- * @brief Bind, announce readiness and serve until shutdown.
+ * @brief Start sampling, bind, announce readiness and serve until shutdown.
  * @return Process exit code (0 on normal shutdown).
  * @throws std::runtime_error if the server cannot bind.
  */
 int Application::run()
 {
+    // Sampling starts before READY so the first API call already finds a snapshot.
+    m_metrics->start();
     const int port = m_server.bind();
 
     if (m_config.devMode)
@@ -71,6 +81,7 @@ int Application::run()
         // so the thread has already finished reading stdin and join() returns immediately.
         m_parentWatchdog.join();
     }
+    m_metrics->stop();
     std::cerr << "[Application] stopped" << std::endl;
     return 0;
 }
@@ -79,6 +90,10 @@ int Application::run()
 void Application::registerControllers()
 {
     // Add new controllers here: create the service(s), the controller, then register its routes.
+    m_controllers.push_back(std::make_unique<api::system::SystemController>(
+        std::make_shared<services::system::SystemOverviewService>(m_metrics)));
+    m_controllers.push_back(std::make_unique<api::performance::PerformanceController>(
+        std::make_shared<services::performance::PerformanceService>(m_metrics)));
 #if SYSTEMLENS_ENABLE_SAMPLE_API
     m_controllers.push_back(std::make_unique<api::sample::SampleHelloController>(
         std::make_shared<services::sample::SampleHelloService>()));

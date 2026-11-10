@@ -44,7 +44,51 @@ add_library(systemlens_core STATIC
     src/app/Application.cpp
     src/api/ApiResponse.cpp
     src/api/HttpServer.cpp
+    src/api/JsonHelpers.cpp
+    src/api/performance/PerformanceController.cpp
+    src/api/system/SystemController.cpp
+    src/services/monitoring/MetricsCollector.cpp
+    src/services/performance/PerformanceService.cpp
+    src/services/system/SystemOverviewService.cpp
 )
+
+# Platform providers: exactly one directory is compiled. Each defines createPlatformProviders()
+# (declared in src/providers/PlatformProviders.h), so no other code needs an #ifdef per OS.
+if(WIN32)
+    target_sources(systemlens_core PRIVATE
+        src/providers/windows/PdhQuery.cpp
+        src/providers/windows/WindowsCpuProvider.cpp
+        src/providers/windows/WindowsDiskProvider.cpp
+        src/providers/windows/WindowsGpuProvider.cpp
+        src/providers/windows/WindowsMemoryProvider.cpp
+        src/providers/windows/WindowsNetworkProvider.cpp
+        src/providers/windows/WindowsPlatformProviders.cpp
+        src/providers/windows/WindowsProcessProvider.cpp
+        src/providers/windows/WindowsSystemInfoProvider.cpp
+        src/providers/windows/WindowsUtil.cpp
+    )
+    # System libraries only: performance counters, adapters, process status, sessions, DXGI, native API, registry.
+    target_link_libraries(systemlens_core PUBLIC pdh iphlpapi psapi wtsapi32 dxgi ntdll advapi32)
+elseif(APPLE)
+    # Placeholders only (every method throws NotImplementedError). Not implemented yet.
+    target_sources(systemlens_core PRIVATE
+        src/providers/macos/MacosProviders.cpp
+    )
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    target_sources(systemlens_core PRIVATE
+        src/providers/linux/LinuxCpuProvider.cpp
+        src/providers/linux/LinuxDiskProvider.cpp
+        src/providers/linux/LinuxGpuProvider.cpp
+        src/providers/linux/LinuxMemoryProvider.cpp
+        src/providers/linux/LinuxNetworkProvider.cpp
+        src/providers/linux/LinuxPlatformProviders.cpp
+        src/providers/linux/LinuxProcessProvider.cpp
+        src/providers/linux/LinuxSystemInfoProvider.cpp
+        src/providers/linux/ProcFs.cpp
+    )
+else()
+    message(FATAL_ERROR "No platform providers for ${CMAKE_SYSTEM_NAME}: add a directory under src/providers/")
+endif()
 
 if(SYSTEMLENS_ENABLE_SAMPLE_API)
     target_sources(systemlens_core PRIVATE
@@ -55,19 +99,30 @@ endif()
 
 target_include_directories(systemlens_core PUBLIC src)
 
+# The metrics sampler runs on its own thread.
+find_package(Threads REQUIRED)
+
 target_link_libraries(systemlens_core PUBLIC
     httplib::httplib
     nlohmann_json::nlohmann_json
+    Threads::Threads
 )
 
 target_compile_definitions(systemlens_core PUBLIC
     SYSTEMLENS_ENABLE_SAMPLE_API=$<BOOL:${SYSTEMLENS_ENABLE_SAMPLE_API}>
-    # cpp-httplib requires Windows 10 APIs; WIN32_LEAN_AND_MEAN/NOMINMAX keep
-    # <windows.h> (pulled in by httplib) from defining min/max macros and extra headers.
-    _WIN32_WINNT=0x0A00
-    WIN32_LEAN_AND_MEAN
-    NOMINMAX
 )
+if(WIN32)
+    target_compile_definitions(systemlens_core PUBLIC
+        # cpp-httplib requires Windows 10 APIs; WIN32_LEAN_AND_MEAN/NOMINMAX keep
+        # <windows.h> (pulled in by httplib) from defining min/max macros and extra headers.
+        _WIN32_WINNT=0x0A00
+        WIN32_LEAN_AND_MEAN
+        NOMINMAX
+        # The Windows providers call the wide-character (W) APIs explicitly.
+        UNICODE
+        _UNICODE
+    )
+endif()
 
 if(MSVC)
     # Source files are UTF-8.

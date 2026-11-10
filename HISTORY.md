@@ -19,6 +19,33 @@ Mẫu entry:
 - AI: đề xuất / kết quả / vấn đề phát hiện
 -->
 
+## 2026-11-11 — [WIP] Backend lấy dữ liệu thật: tầng provider (Linux, macOS stub), collector, 3 API mới
+
+**Lý do:** User yêu cầu UI hiện tại (app shell + Performance › CPU) hiển thị dữ liệu thật trên Windows và Linux
+(macOS để dạng interface), C++ hiện đại, AI tự quyết định và ghi lại. Đây là commit checkpoint giữa chừng: user
+yêu cầu push phần đã làm được trước khi phiên làm việc hết hạn mức, rồi tiếp tục sau.
+
+**Nội dung:**
+- `docs/decisions/2026-11-10-live-data-windows-linux.md` (mới): toàn bộ quyết định thiết kế D-01…D-41 và lý do.
+- `api/openapi.yaml`: version 0.2.0, thêm `getSystemOverview`, `getPerformanceResources`, `getCpuPerformance`.
+- `backend/src/providers/`: 7 interface provider + `PlatformProviders.h`; implement Linux (`/proc`, `/sys`);
+  macOS là stub ném `NotImplementedError`; Windows mới có `WindowsUtil`, `PdhQuery`.
+- `backend/src/services/monitoring/`: `MetricsCollector` (`std::jthread`, lấy mẫu 1 giây, lịch sử 60 giây).
+- `backend/src/services/{system,performance}/`, `backend/src/api/{system,performance}/`: service + controller.
+- `backend/CMakeLists.txt`: chọn thư mục provider theo hệ điều hành; `Application` nối dây các thành phần mới.
+
+**Trạng thái (chưa xong):**
+- Linux: build và chạy được, 3 API trả dữ liệu thật.
+- Windows: **chưa build được** — `CMakeLists.txt` đã liệt kê các file provider Windows chưa được viết.
+- Frontend vẫn dùng mock; tài liệu FR/LLD/api-schema chưa cập nhật.
+
+**Trao đổi user ↔ AI:**
+- User: tạo nhánh mới, viết code để UI hiển thị đúng data; hỗ trợ Windows + Linux, macOS để interface; C++ modern;
+  chỉ đọc nhánh hiện tại; tự quyết định mọi thứ và ghi vào 1 file markdown.
+- AI: ghi các quyết định vào `docs/decisions/`; container không có PowerShell nên tự chuẩn hoá UTF-8 + CRLF bằng script.
+- User: nếu phiên hết limit 5 tiếng thì push phần đã làm trước, 5h10 tiếp tục.
+- AI: push checkpoint này và hẹn tự tiếp tục lúc 05:10 (giờ Việt Nam).
+
 ## 2026-10-29 — Thêm màn hình Performance › CPU (giá trị cố định theo Figma) và app shell dùng chung
 
 **Lý do:** User muốn có giao diện màn hình CPU giống thiết kế Figma "SystemLens UI" (giá trị fix cứng tạm thời,
