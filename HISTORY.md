@@ -19,6 +19,35 @@ Mẫu entry:
 - AI: đề xuất / kết quả / vấn đề phát hiện
 -->
 
+## 2026-11-11 — UI hiển thị dữ liệu thật: provider Windows, frontend live, tài liệu
+
+**Lý do:** Hoàn thành yêu cầu "UI hiện tại hiển thị đúng data trên Windows và Linux" (tiếp nối commit WIP bên dưới).
+
+**Nội dung:**
+- `backend/src/providers/windows/`: 7 provider Windows (`NtQuerySystemInformation`, PDH, IOCTL disk, `GetIfTable2`,
+  DXGI, registry, SCM) + `WindowsUtil`, `PdhQuery`, `NativeApi.h`.
+- `backend`: `isSelf` không tính PID 1; sửa cảnh báo biên dịch.
+- `frontend/renderer`: xoá 2 file mock; thêm `ui/format.js`, `api/system`, `api/performance`, `live/liveDataLoop.js`,
+  `shell/shellModel.js` + `shellTexts.js`, `views/cpu/cpuPerformanceModel.js` + `cpuPerformanceTexts.js`;
+  `appShell.js` và `cpuPerformanceView.js` chuyển sang khung tĩnh + `update(data)`; `app.js` poll 3 API mỗi giây.
+- `frontend/main/backendProcess.js`: đường dẫn backend theo nền tảng.
+- CSS: `.slot`, chấm đỏ khi mất kết nối, sidebar cuộn được, thanh breakdown co giãn.
+- Tài liệu: FR-SYS-01, FR-PERF-01/02, HLD-06, LLD-04, LLD-05, `api-schema.md` (sinh từ YAML), `api-convention.md`,
+  `docs/README.md`, `README.md` (lệnh build Linux), cập nhật LLD-03 và file quyết định.
+- `evi/app_cpu_performance_live_linux.png`: ảnh màn hình CPU với dữ liệu thật trên Linux.
+
+**Kiểm chứng:**
+- Linux: build sạch cảnh báo, 3 API trả dữ liệu thật (401 khi thiếu token), UI chạy trong Chromium headless không lỗi
+  console, tooltip giữ nguyên qua các lần refresh.
+- Windows: chỉ biên dịch chéo + link bằng MinGW-w64; **chưa chạy thật và chưa build bằng MSVC**.
+- macOS: stub, chưa biên dịch.
+
+**Trao đổi user ↔ AI:**
+- User: (như entry WIP) tự quyết định mọi thứ, ghi vào markdown; push trước khi hết limit, 5h10 tiếp tục.
+- AI: 42 quyết định ghi tại `docs/decisions/2026-11-10-live-data-windows-linux.md`.
+- AI: `git push` bị GitHub từ chối 403 (Claude GitHub App chưa có quyền ghi vào repo) — cần user cấp quyền.
+- AI: cài MinGW-w64 tạm trong container để kiểm tra code Windows (không đụng tới repo/máy user).
+
 ## 2026-11-11 — [WIP] Backend lấy dữ liệu thật: tầng provider (Linux, macOS stub), collector, 3 API mới
 
 **Lý do:** User yêu cầu UI hiện tại (app shell + Performance › CPU) hiển thị dữ liệu thật trên Windows và Linux

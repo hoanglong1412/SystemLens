@@ -1,6 +1,7 @@
 # SystemLens
 
-A Windows task manager (inspired by MiTeC Task Manager DeLuxe) built as a learning project.
+A task manager for Windows and Linux (inspired by MiTeC Task Manager DeLuxe) built as a learning project.
+macOS has provider interfaces only (not implemented yet).
 
 - **Backend:** C++20, CMake — collects system data, exposes it over a local HTTP/WebSocket API.
 - **Frontend:** Electron (HTML/CSS/JS) — displays the data.
@@ -36,6 +37,15 @@ cmake --build backend/build --config Debug
 backend/build/Debug/systemlens-backend.exe --dev --port 8765
 ```
 
+Backend on Linux (GCC 13+ or Clang 16+, any single-configuration generator). Run from the **repo root**:
+
+```bash
+cmake -S backend -B backend/build -DCMAKE_BUILD_TYPE=Debug
+cmake --build backend/build
+backend/build/systemlens-backend --dev --port 8765
+curl http://127.0.0.1:8765/api/v1/performance/cpu
+```
+
 Debug in VS Code: open the repo root, pick the "Debug backend" launch config (F5). It builds first
 and starts with `--dev --port 8765`.
 
@@ -44,4 +54,7 @@ Frontend:
 ```bash
 cd frontend && npm install && npm start
 ```
+
+The frontend starts `backend/build/Debug/systemlens-backend.exe` on Windows and
+`backend/build/systemlens-backend` elsewhere; set `SYSTEMLENS_BACKEND_EXE` to use another path.
 

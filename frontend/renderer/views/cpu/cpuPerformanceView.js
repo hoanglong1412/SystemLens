@@ -2,12 +2,16 @@
  * @file   cpuPerformanceView.js
  * @brief  Performance > CPU screen: resource sidebar and the CPU detail panel (gauges, utilization
  *         chart, top processes, summary, specifications, CPU time breakdown, scheduler activity).
- *         Static for now: renders the data object it is given (CPU_PERFORMANCE_MOCK).
+ *
+ * The cards are built once; update() replaces only the content that changes (texts, plots, table
+ * rows), so the info icons and their open tooltips survive the once-per-second refresh.
+ * Display data comes from cpuPerformanceModel.js; static texts from cpuPerformanceTexts.js.
  */
 import { dotted, h } from '../../ui/dom.js';
 import { infoIcon } from '../../ui/tooltip.js';
 import { plot } from '../../ui/charts/plot.js';
 import { ledGauge } from '../../ui/charts/ledGauge.js';
+import { CPU_TEXTS } from './cpuPerformanceTexts.js';
 
 /** Plot sizes from the design (outer size, border included). */
 const SPARKLINE = { width: 72, height: 52, inset: 1 };
@@ -36,52 +40,76 @@ function cardTitle(title, tip, extraClass = '') {
 }
 
 /**
- * Sidebar: one row per monitored resource with its sparkline.
- * @param {object} data CPU_PERFORMANCE_MOCK-shaped data.
- * @returns {HTMLElement}
+ * A part of the screen: its element and the function that shows new data in it.
+ * @typedef {{element: HTMLElement, update: (data: object) => void}} Part
  */
-function resourceSidebar(data) {
-  return h('aside', { class: 'resources' }, [
-    infoIcon(data.tooltips.resources, 'resources__info'),
-    ...data.resources.map((res) => {
-      const spark = plot({ ...SPARKLINE, series: [{ values: res.series, color: res.color, fill: res.fill }], className: 'sparkline' });
-      spark.style.color = res.color;
-      return h('div', { class: res.selected ? 'resource resource--selected' : 'resource' }, [
-        spark,
-        h('div', { class: 'resource__text' }, [
-          h('div', { class: 'resource__name', text: res.name }),
-          h('div', { class: 'resource__detail' }, dotted(res.detail)),
-        ]),
-      ]);
-    }),
+
+/**
+ * Sidebar: one row per monitored resource with its sparkline.
+ * @returns {Part}
+ */
+function resourceSidebar() {
+  const rows = h('div', { class: 'slot' });
+  const element = h('aside', { class: 'resources' }, [
+    infoIcon(CPU_TEXTS.tooltips.resources, 'resources__info'),
+    rows,
   ]);
+  return {
+    element,
+    update(data) {
+      rows.replaceChildren(...data.resources.map((res) => {
+        const spark = plot({ ...SPARKLINE, series: [{ values: res.series, color: res.color, fill: res.fill }], className: 'sparkline' });
+        spark.style.color = res.color;
+        return h('div', { class: res.selected ? 'resource resource--selected' : 'resource' }, [
+          spark,
+          h('div', { class: 'resource__text' }, [
+            h('div', { class: 'resource__name', text: res.name }),
+            h('div', { class: 'resource__detail' }, dotted(res.detail)),
+          ]),
+        ]);
+      }));
+    },
+  };
 }
 
 /**
  * CPU title, model, topology and Overview / Per-core sub-tabs.
- * @param {object} header
- * @returns {HTMLElement}
+ * @returns {Part}
  */
-function cpuHeader(header) {
-  return h('div', { class: 'cpu-header' }, [
-    h('h1', { class: 'cpu-header__title', text: header.title }),
-    h('div', { class: 'cpu-header__model', text: header.model }),
-    h('div', { class: 'cpu-header__topology' }, dotted(header.topology)),
-    h('div', { class: 'subtabs' }, header.subTabs.map((name) =>
-      h('button', { type: 'button', class: name === header.activeSubTab ? 'subtab subtab--active' : 'subtab', text: name }))),
+function cpuHeader() {
+  const model = h('div', { class: 'cpu-header__model' });
+  const topology = h('div', { class: 'cpu-header__topology' });
+  const element = h('div', { class: 'cpu-header' }, [
+    h('h1', { class: 'cpu-header__title', text: CPU_TEXTS.title }),
+    model,
+    topology,
+    h('div', { class: 'subtabs' }, CPU_TEXTS.subTabs.map((name) =>
+      h('button', { type: 'button', class: name === CPU_TEXTS.activeSubTab ? 'subtab subtab--active' : 'subtab', text: name }))),
   ]);
+  return {
+    element,
+    update({ header }) {
+      model.textContent = header.model;
+      topology.replaceChildren(...dotted(header.topology));
+    },
+  };
 }
 
 /**
  * Live gauges card.
- * @param {object} data
- * @returns {HTMLElement}
+ * @returns {Part}
  */
-function gaugesCard(data) {
-  return card('gauges', [
-    cardTitle('Live gauges', data.tooltips.gauges, 'card__title--small'),
-    h('div', { class: 'gauges' }, data.gauges.map(ledGauge)),
-  ]);
+function gaugesCard() {
+  const gauges = h('div', { class: 'gauges' });
+  return {
+    element: card('gauges', [
+      cardTitle(CPU_TEXTS.gauges.title, CPU_TEXTS.tooltips.gauges, 'card__title--small'),
+      gauges,
+    ]),
+    update(data) {
+      gauges.replaceChildren(...data.gauges.map(ledGauge));
+    },
+  };
 }
 
 /**
@@ -99,52 +127,63 @@ function legend(series) {
 
 /**
  * % Utilization chart card.
- * @param {object} data
- * @returns {HTMLElement}
+ * @returns {Part}
  */
-function utilizationCard(data) {
-  const u = data.utilization;
-  // The usage area is drawn first so the clock / temperature lines stay visible over it.
-  const series = u.series.map(({ values, color, fill }) => ({ values, color, fill }));
-  return card('utilization', [
-    h('div', { class: 'chart__top' }, [
-      cardTitle(u.title, data.tooltips.utilization, 'card__title--small'),
-      h('span', { class: 'chart__axis', text: u.max }),
+function utilizationCard() {
+  const texts = CPU_TEXTS.utilization;
+  const plotSlot = h('div', { class: 'slot' });
+  const legendSlot = h('div', { class: 'slot' });
+  return {
+    element: card('utilization', [
+      h('div', { class: 'chart__top' }, [
+        cardTitle(texts.title, CPU_TEXTS.tooltips.utilization, 'card__title--small'),
+        h('span', { class: 'chart__axis', text: texts.max }),
+      ]),
+      plotSlot,
+      h('div', { class: 'chart__bottom' }, [
+        h('span', { class: 'chart__axis', text: texts.xStart }),
+        legendSlot,
+        h('span', { class: 'chart__axis', text: texts.xEnd }),
+      ]),
     ]),
-    plot({ ...UTILIZATION_PLOT, series, className: 'chart__plot' }),
-    h('div', { class: 'chart__bottom' }, [
-      h('span', { class: 'chart__axis', text: u.xStart }),
-      legend(u.series),
-      h('span', { class: 'chart__axis', text: u.xEnd }),
-    ]),
-  ]);
+    update({ utilization }) {
+      // The usage area is first in the list so the clock / temperature lines stay visible over it.
+      plotSlot.replaceChildren(plot({ ...UTILIZATION_PLOT, series: utilization.series, className: 'chart__plot' }));
+      legendSlot.replaceChildren(legend(utilization.legend));
+    },
+  };
 }
 
 /**
  * Top CPU processes table card.
- * @param {object} data
- * @returns {HTMLElement}
+ * @returns {Part}
  */
-function topProcessesCard(data) {
-  const t = data.topProcesses;
-  const rows = t.rows.map((row) => {
-    const cpu = h('td', { class: 'proc__cpu', text: row.cpu });
-    // backgroundColor, not the background shorthand: the shorthand would reset background-clip.
-    cpu.style.backgroundColor = row.cpuShade;
-    return h('tr', {}, [
-      h('td', { class: 'proc__pid', text: String(row.pid) }),
-      h('td', { class: row.self ? 'proc__name proc__name--self' : 'proc__name', text: row.name }),
-      cpu,
-      h('td', { class: 'proc__mem', text: row.memory }),
-    ]);
-  });
-  return card('processes', [
-    cardTitle(`» ${t.title}`, data.tooltips.topProcesses, 'card__title--table'),
-    h('table', { class: 'proc' }, [
-      h('thead', {}, [h('tr', {}, t.columns.map((c) => h('th', { text: c })))]),
-      h('tbody', {}, rows),
+function topProcessesCard() {
+  const title = h('span', { class: 'slot' });
+  const body = h('tbody');
+  return {
+    element: card('processes', [
+      h('div', { class: 'card__title card__title--table' }, [title, infoIcon(CPU_TEXTS.tooltips.topProcesses)]),
+      h('table', { class: 'proc' }, [
+        h('thead', {}, [h('tr', {}, CPU_TEXTS.topProcesses.columns.map((c) => h('th', { text: c })))]),
+        body,
+      ]),
     ]),
-  ]);
+    update({ topProcesses }) {
+      title.textContent = `» ${topProcesses.title}`;
+      body.replaceChildren(...topProcesses.rows.map((row) => {
+        const cpu = h('td', { class: 'proc__cpu', text: row.cpu });
+        // backgroundColor, not the background shorthand: the shorthand would reset background-clip.
+        cpu.style.backgroundColor = row.cpuShade;
+        return h('tr', {}, [
+          h('td', { class: 'proc__pid', text: String(row.pid) }),
+          h('td', { class: row.self ? 'proc__name proc__name--self' : 'proc__name', text: row.name }),
+          cpu,
+          h('td', { class: 'proc__mem', text: row.memory }),
+        ]);
+      }));
+    },
+  };
 }
 
 /**
@@ -161,108 +200,145 @@ function metric({ label, value }) {
 
 /**
  * Summary card: six headline metrics and the uptime block.
- * @param {object} data
- * @returns {HTMLElement}
+ * @returns {Part}
  */
-function summaryCard(data) {
-  const { metrics, uptime } = data.summary;
-  return card('summary', [
-    h('div', { class: 'summary__metrics' }, metrics.map(metric)),
-    h('div', { class: 'summary__divider' }),
-    h('div', { class: 'summary__uptime' }, [
-      h('div', { class: 'metric__label', text: uptime.label }),
-      h('div', { class: 'summary__uptime-value', text: uptime.value }),
-      h('div', { class: 'metric__label summary__started-label', text: uptime.startedLabel }),
-      h('div', { class: 'summary__started', text: uptime.started }),
+function summaryCard() {
+  const metrics = h('div', { class: 'summary__metrics' });
+  const uptime = h('div', { class: 'summary__uptime' });
+  return {
+    element: card('summary', [
+      metrics,
+      h('div', { class: 'summary__divider' }),
+      uptime,
+      infoIcon(CPU_TEXTS.tooltips.summary, 'summary__info'),
     ]),
-    infoIcon(data.tooltips.summary, 'summary__info'),
-  ]);
+    update({ summary }) {
+      metrics.replaceChildren(...summary.metrics.map(metric));
+      uptime.replaceChildren(
+        h('div', { class: 'metric__label', text: summary.uptime.label }),
+        h('div', { class: 'summary__uptime-value', text: summary.uptime.value }),
+        h('div', { class: 'metric__label summary__started-label', text: summary.uptime.startedLabel }),
+        h('div', { class: 'summary__started', text: summary.uptime.started }),
+      );
+    },
+  };
 }
 
 /**
  * Specifications card: two columns of label/value rows.
- * @param {object} data
- * @returns {HTMLElement}
+ * @returns {Part}
  */
-function specificationsCard(data) {
-  const spec = data.specifications;
-  return card('spec', [
-    cardTitle(spec.title, data.tooltips.specifications),
-    h('div', { class: 'spec' }, spec.columns.map((rows) =>
-      h('div', { class: 'spec__column' }, rows.map(([label, value]) =>
-        h('div', { class: 'spec__row' }, [
-          h('span', { class: 'spec__label', text: label }),
-          h('span', { class: 'spec__value', text: value }),
-        ]))))),
-  ]);
+function specificationsCard() {
+  const spec = h('div', { class: 'spec' });
+  return {
+    element: card('spec', [
+      cardTitle(CPU_TEXTS.specifications.title, CPU_TEXTS.tooltips.specifications),
+      spec,
+    ]),
+    update({ specifications }) {
+      spec.replaceChildren(...specifications.columns.map((rows) =>
+        h('div', { class: 'spec__column' }, rows.map(([label, value]) =>
+          h('div', { class: 'spec__row' }, [
+            h('span', { class: 'spec__label', text: label }),
+            h('span', { class: 'spec__value', text: value }),
+          ])))));
+    },
+  };
 }
 
 /**
  * CPU time breakdown card: stacked bar, legend with percentages and User vs Kernel trend.
- * @param {object} data
- * @returns {HTMLElement}
+ * @returns {Part}
  */
-function breakdownCard(data) {
-  const b = data.breakdown;
-  const segments = b.parts.map(({ color, width }) => {
-    const seg = h('span', { class: 'breakdown__seg' });
-    seg.style.background = color;
-    seg.style.width = `${width}px`;
-    return seg;
-  });
-  const items = b.parts.map(({ name, percent, color }) => {
-    const swatch = h('span', { class: 'breakdown__swatch' });
-    swatch.style.background = color;
-    return h('div', { class: 'breakdown__item' }, [
-      swatch,
-      h('div', {}, [
-        h('div', { class: 'breakdown__name', text: name }),
-        h('div', { class: 'breakdown__percent', text: percent }),
+function breakdownCard() {
+  const texts = CPU_TEXTS.breakdown;
+  const bar = h('div', { class: 'breakdown__bar' });
+  const legendRow = h('div', { class: 'breakdown__legend' });
+  const trendSlot = h('div', { class: 'slot' });
+  return {
+    element: card('breakdown', [
+      h('div', { class: 'card__head' }, [
+        cardTitle(texts.title, CPU_TEXTS.tooltips.breakdown),
+        h('span', { class: 'card__aside' }, dotted(texts.scope)),
       ]),
-    ]);
-  });
-  return card('breakdown', [
-    h('div', { class: 'card__head' }, [
-      cardTitle(b.title, data.tooltips.breakdown),
-      h('span', { class: 'card__aside' }, dotted(b.scope)),
+      bar,
+      legendRow,
+      h('div', { class: 'breakdown__caption' }, dotted(texts.trendCaption)),
+      trendSlot,
     ]),
-    h('div', { class: 'breakdown__bar' }, segments),
-    h('div', { class: 'breakdown__legend' }, items),
-    h('div', { class: 'breakdown__caption' }, dotted(b.trendCaption)),
-    plot({ ...TREND_PLOT, series: b.trend, className: 'chart__plot chart__plot--trend' }),
-  ]);
+    update({ breakdown }) {
+      bar.replaceChildren(...breakdown.parts.map(({ color, width }) => {
+        const seg = h('span', { class: width === null ? 'breakdown__seg breakdown__seg--rest' : 'breakdown__seg' });
+        seg.style.background = color;
+        if (width !== null) seg.style.width = `${width}px`;
+        return seg;
+      }));
+      legendRow.replaceChildren(...breakdown.parts.map(({ name, percent, color }) => {
+        const swatch = h('span', { class: 'breakdown__swatch' });
+        swatch.style.background = color;
+        return h('div', { class: 'breakdown__item' }, [
+          swatch,
+          h('div', {}, [
+            h('div', { class: 'breakdown__name', text: name }),
+            h('div', { class: 'breakdown__percent', text: percent }),
+          ]),
+        ]);
+      }));
+      trendSlot.replaceChildren(plot({ ...TREND_PLOT, series: breakdown.trend, className: 'chart__plot chart__plot--trend' }));
+    },
+  };
 }
 
 /**
  * Scheduler activity card.
- * @param {object} data
- * @returns {HTMLElement}
+ * @returns {Part}
  */
-function schedulerCard(data) {
-  const sc = data.scheduler;
-  return card('scheduler', [
-    h('div', { class: 'card__head' }, [
-      cardTitle(sc.title, data.tooltips.scheduler),
-      h('span', { class: 'card__aside', text: sc.unit }),
+function schedulerCard() {
+  const texts = CPU_TEXTS.scheduler;
+  const metrics = h('div', { class: 'scheduler__metrics' });
+  const source = h('div', { class: 'scheduler__source' });
+  return {
+    element: card('scheduler', [
+      h('div', { class: 'card__head' }, [
+        cardTitle(texts.title, CPU_TEXTS.tooltips.scheduler),
+        h('span', { class: 'card__aside', text: texts.unit }),
+      ]),
+      metrics,
+      source,
     ]),
-    h('div', { class: 'scheduler__metrics' }, sc.metrics.map(metric)),
-    h('div', { class: 'scheduler__source', text: sc.source }),
-  ]);
+    update({ scheduler }) {
+      metrics.replaceChildren(...scheduler.metrics.map(metric));
+      source.textContent = scheduler.source;
+    },
+  };
 }
 
 /**
- * Render the CPU performance screen.
+ * Build the CPU performance screen.
  * @param {HTMLElement} container Shell content slot (emptied first).
- * @param {object} data CPU_PERFORMANCE_MOCK-shaped data.
+ * @param {object} data Initial display data (see cpuPerformanceModel.js, toCpuViewData).
+ * @returns {{update: (data: object) => void}} update: show new display data.
  */
-export function renderCpuPerformanceView(container, data) {
+export function createCpuPerformanceView(container, data) {
+  const sidebar = resourceSidebar();
+  const header = cpuHeader();
+  const top = [gaugesCard(), utilizationCard(), topProcessesCard()];
+  const middle = [summaryCard(), specificationsCard()];
+  const bottom = [breakdownCard(), schedulerCard()];
+  const elements = (parts) => parts.map((part) => part.element);
+
   container.replaceChildren(h('div', { class: 'perf' }, [
-    resourceSidebar(data),
+    sidebar.element,
     h('div', { class: 'cpu' }, [
-      cpuHeader(data.header),
-      h('div', { class: 'cpu__row cpu__row--top' }, [gaugesCard(data), utilizationCard(data), topProcessesCard(data)]),
-      h('div', { class: 'cpu__row cpu__row--mid' }, [summaryCard(data), specificationsCard(data)]),
-      h('div', { class: 'cpu__row cpu__row--bottom' }, [breakdownCard(data), schedulerCard(data)]),
+      header.element,
+      h('div', { class: 'cpu__row cpu__row--top' }, elements(top)),
+      h('div', { class: 'cpu__row cpu__row--mid' }, elements(middle)),
+      h('div', { class: 'cpu__row cpu__row--bottom' }, elements(bottom)),
     ]),
   ]));
+
+  const parts = [sidebar, header, ...top, ...middle, ...bottom];
+  const update = (next) => parts.forEach((part) => part.update(next));
+  update(data);
+  return { update };
 }

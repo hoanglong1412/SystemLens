@@ -3,8 +3,8 @@
 | Item | Value |
 |---|---|
 | Scope | Components of SystemLens and the overview flows between them |
-| Traces to | [FR-SMP-01](../requirements/functional-requirements.md#fr-smp-01), [NFR-01](../requirements/non-functional-requirements.md#nfr-01), [NFR-02](../requirements/non-functional-requirements.md#nfr-02) |
-| Detailed in | [LLD-01](lld/LLD-01-backend-lifecycle.md), [LLD-02](lld/LLD-02-api-request-pipeline.md), [LLD-03](lld/LLD-03-sample-hello.md) |
+| Traces to | [FR-SMP-01](../requirements/functional-requirements.md#fr-smp-01), [FR-SYS-01](../requirements/functional-requirements.md#fr-sys-01), [FR-PERF-01](../requirements/functional-requirements.md#fr-perf-01), [FR-PERF-02](../requirements/functional-requirements.md#fr-perf-02), [NFR-01](../requirements/non-functional-requirements.md#nfr-01), [NFR-02](../requirements/non-functional-requirements.md#nfr-02) |
+| Detailed in | [LLD-01](lld/LLD-01-backend-lifecycle.md), [LLD-02](lld/LLD-02-api-request-pipeline.md), [LLD-03](lld/LLD-03-sample-hello.md), [LLD-04](lld/LLD-04-metrics-collection.md), [LLD-05](lld/LLD-05-live-performance-ui.md) |
 | API | [api-schema.md](../api-schema.md), rules in [api-convention.md](../api-convention.md) |
 | Index / matrix | [docs/README.md](../README.md#3-traceability-matrix) |
 
@@ -15,6 +15,7 @@
 | [HLD-03](#hld-03) | App start | NFR-02 | LLD-01 |
 | [HLD-04](#hld-04) | App end | NFR-02 | LLD-01 |
 | [HLD-05](#hld-05) | Calling one API | NFR-01, NFR-02 | LLD-02 |
+| [HLD-06](#hld-06) | Live metrics: operating system → sampler → API → UI | FR-SYS-01, FR-PERF-01, FR-PERF-02 | LLD-04, LLD-05 |
 
 ## Overview
 
@@ -23,7 +24,7 @@ SystemLens has two processes:
 | Process | Technology | Role |
 |---|---|---|
 | Frontend | Electron (HTML/CSS/JS): main process, preload script, renderer | Starts and stops the backend, shows the UI. |
-| Backend | C++20 executable `systemlens-backend.exe` (cpp-httplib, nlohmann/json) | Serves the HTTP API on `127.0.0.1`. |
+| Backend | C++20 executable `systemlens-backend` (`.exe` on Windows; cpp-httplib, nlohmann/json) | Samples the operating system (Windows, Linux; macOS placeholders) and serves the HTTP API on `127.0.0.1`. |
 
 The API between them is defined by [`api/openapi.yaml`](../../api/openapi.yaml) (NFR-01).
 
@@ -38,13 +39,19 @@ frontend/
 ├── preload/
 │   └── preload.js                 exposes window.systemlens to the renderer
 └── renderer/
-    ├── index.html                 single page (CSP, #message)
-    ├── styles.css
-    ├── app.js                     renderer entry point
-    └── api/
-        ├── apiClient.js           ApiClient, ApiError
-        └── sample/
-            └── sampleHelloApi.js  getSampleHello()
+    ├── index.html                 single page (CSP, #app)
+    ├── styles.css, styles/        design tokens; shell / component / screen styles
+    ├── app.js                     renderer entry point: mounts the UI, starts the live refresh
+    ├── api/
+    │   ├── apiClient.js           ApiClient, ApiError
+    │   ├── sample/sampleHelloApi.js          getSampleHello()
+    │   ├── system/systemApi.js               getSystemOverview()
+    │   └── performance/performanceApi.js     getPerformanceResources(), getCpuPerformance()
+    ├── live/
+    │   └── liveDataLoop.js        LiveDataLoop: repeat a load once per second
+    ├── shell/                     app shell: appShell.js (DOM), shellModel.js (API → display), shellTexts.js
+    ├── views/                     screens: hello/, cpu/ (View, Model, Texts), viewSwitcher.js
+    └── ui/                        dom.js, format.js, tooltip.js, icons.js, charts/
 backend/
 ├── CMakeLists.txt                 systemlens_core (static lib) + systemlens-backend (exe)
 └── src/
@@ -58,12 +65,22 @@ backend/
     │   ├── IController.h          controller interface
     │   ├── HttpServer.h/.cpp      cpp-httplib wrapper: auth, CORS, errors
     │   ├── ApiResponse.h/.cpp     ok() / problem() builders, status constants
-    │   └── sample/
-    │       └── SampleHelloController.h/.cpp
-    └── services/
-        └── sample/
-            ├── ISampleHelloService.h
-            └── SampleHelloService.h/.cpp
+    │   ├── JsonHelpers.h/.cpp     nullable(), toRfc3339()
+    │   ├── sample/SampleHelloController.h/.cpp
+    │   ├── system/SystemController.h/.cpp
+    │   └── performance/PerformanceController.h/.cpp
+    ├── services/
+    │   ├── sample/                ISampleHelloService, SampleHelloService
+    │   ├── monitoring/            MetricsCollector (sampler thread), IMetricsSource, MetricsSnapshot, History
+    │   ├── system/                ISystemOverviewService, SystemOverviewService
+    │   └── performance/           IPerformanceService, PerformanceService
+    └── providers/
+        ├── I*Provider.h           7 provider interfaces (system info, CPU, memory, disk, network, GPU, process)
+        ├── PlatformProviders.h    provider set + createPlatformProviders() (defined once per OS)
+        ├── ProviderError.h        ProviderError, NotImplementedError
+        ├── windows/               Windows implementations (Win32, native API, PDH, DXGI)
+        ├── linux/                 Linux implementations (/proc, /sys)
+        └── macos/                 placeholders throwing NotImplementedError
 api/
 └── openapi.yaml                   API contract
 ```
@@ -134,7 +151,9 @@ flowchart LR
 | 13 | `SampleHelloController` → `SampleHelloService` | Calls `getGreeting()` through `ISampleHelloService` (injected via constructor). | `backend/src/api/sample/SampleHelloController.cpp` |
 | 14 | `api/openapi.yaml` → FE api module, BE controller | Both sides implement the contract (NFR-01). | header comments of both files |
 
-Backend layering as in the code: `HttpServer` → Controller (`IController`) → Service (`I…Service`).
+Backend layering as in the code: `HttpServer` → Controller (`IController`) → Service (`I…Service`) → Provider
+(`I…Provider`, see [HLD-06](#hld-06)). The diagram above shows the sample feature only; the system and
+performance features add controllers, services and providers with the same shape.
 The sample controller and service are compiled only when `SYSTEMLENS_ENABLE_SAMPLE_API=ON`.
 
 <a id="hld-02"></a>
@@ -371,3 +390,52 @@ sequenceDiagram
 | 18 | api module → Feature | Not caught in the api module; the feature handles it. |
 | 19 | ApiClient → api module | `fetch` rejected (backend down, timeout): `ApiError("<METHOD> <path> failed: <message>")`, `status` = 0. |
 | 20 | api module → Feature | Same as 18. |
+
+<a id="hld-06"></a>
+## HLD-06 — Live metrics: operating system → sampler → API → UI
+
+Traces to [FR-SYS-01](../requirements/functional-requirements.md#fr-sys-01),
+[FR-PERF-01](../requirements/functional-requirements.md#fr-perf-01),
+[FR-PERF-02](../requirements/functional-requirements.md#fr-perf-02).
+Details: [LLD-04](lld/LLD-04-metrics-collection.md) (backend), [LLD-05](lld/LLD-05-live-performance-ui.md) (frontend).
+
+```mermaid
+flowchart LR
+    subgraph OS["Operating system"]
+        WIN["Windows: Win32, native API, PDH, DXGI"]
+        LNX["Linux: /proc, /sys"]
+        MAC["macOS: not implemented"]
+    end
+    subgraph BE["Backend"]
+        PRV["Platform providers<br/>7 interfaces, one directory per OS"]
+        COL["MetricsCollector<br/>jthread, 1 sample per second<br/>deltas, rates, 60 s history"]
+        SNAP[("MetricsSnapshot<br/>immutable, shared")]
+        SVC["SystemOverviewService<br/>PerformanceService"]
+        CTL["SystemController<br/>PerformanceController"]
+    end
+    subgraph FE["Frontend - Renderer"]
+        LOOP["LiveDataLoop<br/>1 refresh per second"]
+        MODEL["shellModel / cpuPerformanceModel<br/>API object → display data"]
+        VIEW["appShell / cpuPerformanceView<br/>update(data)"]
+    end
+
+    WIN & LNX & MAC -- "1 raw cumulative counters" --> PRV
+    PRV -- "2 readSample() etc." --> COL
+    COL -- "3 publish" --> SNAP
+    SNAP -- "4 latest()" --> SVC
+    SVC -- "5 result structs" --> CTL
+    CTL -- "6 JSON over HTTP (HLD-05)" --> LOOP
+    LOOP -- "7 API objects" --> MODEL
+    MODEL -- "8 display data" --> VIEW
+```
+
+| # | From → To | Interaction |
+|---|---|---|
+| 1 | Operating system → providers | Each provider reads one domain and returns raw values: cumulative CPU times, byte counters, busy times, event counts, plus static facts. Values the platform lacks are `std::nullopt`. |
+| 2 | Providers → `MetricsCollector` | The sampler thread calls every provider once per second. Only this layer contains operating-system specific code; CMake compiles exactly one provider directory. |
+| 3 | `MetricsCollector` → `MetricsSnapshot` | Two consecutive samples become percentages and per-second rates; the last 61 samples of each series are kept. The result is published as an immutable snapshot. |
+| 4 | Snapshot → services | Request threads only read the latest snapshot (no operating-system call per request). |
+| 5 | Services → controllers | Services select and shape the data per endpoint; controllers serialize to JSON (`null` for missing values). |
+| 6 | Controllers → `LiveDataLoop` | Three `GET` requests in parallel once per second. |
+| 7 | `LiveDataLoop` → models | Models format numbers into display texts (`ui/format.js`); `—` for `null`. |
+| 8 | Models → views | Views replace only the changing content, so tooltips and focus survive the refresh. |

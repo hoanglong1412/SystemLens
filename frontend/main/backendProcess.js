@@ -1,6 +1,6 @@
 /**
  * @file   backendProcess.js
- * @brief  Starts, tracks and stops the C++ backend (systemlens-backend.exe) for the Electron app.
+ * @brief  Starts, tracks and stops the C++ backend (systemlens-backend) for the Electron app.
  *
  * Handshake with the backend (see backend/src/app/Application.h):
  *  1. We generate a random token and pass it in the SYSTEMLENS_TOKEN environment variable.
@@ -21,14 +21,19 @@ const DEFAULT_HOST = '127.0.0.1';
 
 /**
  * Locate the backend executable.
- * SYSTEMLENS_BACKEND_EXE overrides the default, which is the Debug build of the dev tree.
- * @returns {string} Absolute path to systemlens-backend.exe.
+ * SYSTEMLENS_BACKEND_EXE overrides the default, which is the build output of the dev tree:
+ * the Debug folder of the Visual Studio generator on Windows, the build folder itself with the
+ * single-configuration generators (Ninja, Makefiles) used on other platforms.
+ * @returns {string} Absolute path to the backend executable.
  */
 function resolveBackendExePath() {
   if (process.env.SYSTEMLENS_BACKEND_EXE) {
     return process.env.SYSTEMLENS_BACKEND_EXE;
   }
-  return path.join(__dirname, '..', '..', 'backend', 'build', 'Debug', 'systemlens-backend.exe');
+  const buildDir = path.join(__dirname, '..', '..', 'backend', 'build');
+  return process.platform === 'win32'
+    ? path.join(buildDir, 'Debug', 'systemlens-backend.exe')
+    : path.join(buildDir, 'systemlens-backend');
 }
 
 /** Owns one backend child process and the connection info it reported. */

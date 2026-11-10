@@ -99,9 +99,10 @@ loại, để user review sau. Mỗi quyết định có ID `D-NN`.
 |---|---|
 | D-37 | Phiên làm việc chạy trong container Linux, **không có PowerShell**: hook `fix-format.ps1` và `Tool\check_*.ps1` không chạy được. AI tự chuẩn hoá UTF-8 không BOM + CRLF bằng script tương đương và kiểm tra lại toàn bộ file đã đổi trước khi commit. |
 | D-38 | Để kiểm tra code Windows biên dịch được, AI cài cross-compiler MinGW-w64 **chỉ trong container tạm** (không thêm gì vào repo hay máy của user). MinGW khác MSVC nên đây chỉ là kiểm tra cú pháp/kiểu/link. |
-| D-39 | Đã kiểm chứng: Linux — build, chạy backend thật, gọi 3 API, chạy UI Electron và chụp màn hình. Windows — chỉ biên dịch chéo, **chưa chạy thật**. macOS — chưa biên dịch. |
+| D-39 | Đã kiểm chứng: **Linux** — build (GCC 13, `-Wall -Wextra -Wpedantic` không cảnh báo), chạy backend thật, gọi 3 API (có và không có token), chạy renderer trong Chromium headless trỏ vào backend thật và chụp ảnh `evi/app_cpu_performance_live_linux.png`; chưa chạy qua Electron (container chưa cài `node_modules`). **Windows** — chỉ biên dịch chéo + link bằng MinGW-w64, **chưa chạy thật, chưa build bằng MSVC**. **macOS** — chưa biên dịch. |
 | D-40 | Không thêm script chạy cho Linux trong `Tool/`: quy tắc CRLF làm hỏng shell script. Lệnh build/chạy trên Linux ghi trong `README.md`. |
 | D-41 | Không tạo pull request (chưa được yêu cầu). |
+| D-42 | Dependency `FetchContent` (cpp-httplib, nlohmann/json) không tải được qua proxy của container nên khi kiểm chứng AI dùng bản clone cùng version qua `FETCHCONTENT_SOURCE_DIR_*`; `CMakeLists.txt` không đổi cách tải. |
 
 ## 8. Việc để lại
 

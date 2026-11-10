@@ -250,6 +250,10 @@
   background: var(--green);
 }
 
+.statusbar__dot--offline {
+  background: var(--error);
+}
+
 .statusbar__info {
   margin-left: 6px;
 }

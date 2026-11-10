@@ -4,7 +4,7 @@
 |---|---|
 | Scope | The backend API as readable tables |
 | Source of truth | [`api/openapi.yaml`](../api/openapi.yaml) — **if this file and the YAML disagree, the YAML is right**; fix this file. |
-| Contract version | `0.1.0` (OpenAPI `3.1.0`, title "SystemLens Backend API") |
+| Contract version | `0.2.0` (OpenAPI `3.1.0`, title "SystemLens Backend API") |
 | Traces to | [NFR-01](requirements/non-functional-requirements.md#nfr-01) |
 | Rules | [api-convention.md](api-convention.md) |
 | Index / matrix | [docs/README.md](README.md#3-traceability-matrix) |
@@ -28,6 +28,8 @@
 
 | Tag | Description |
 |---|---|
+| `system` | Machine identity and the always-visible quick stats shown by the app shell. |
+| `performance` | Live performance data of the Performance tab. Values come from a backend sampler that reads the operating system once per second and keeps the last 60 seconds of history. |
 | `sample` | Sample endpoints: exercise the FE ↔ BE plumbing and serve as reference examples for real APIs. Registered only when the backend is built with `SYSTEMLENS_ENABLE_SAMPLE_API=ON`. |
 
 ## 2. Endpoint list
@@ -35,6 +37,9 @@
 | Method | Path | `operationId` | Tag | Auth | Responses | Requirement |
 |---|---|---|---|---|---|---|
 | `GET` | `/api/v1/sample/hello` | [`getSampleHello`](#getsamplehello) | `sample` | `bearerAuth` | 200, 401, 500 | [FR-SMP-01](requirements/functional-requirements.md#fr-smp-01) |
+| `GET` | `/api/v1/system/overview` | [`getSystemOverview`](#getsystemoverview) | `system` | `bearerAuth` | 200, 401, 500 | [FR-SYS-01](requirements/functional-requirements.md#fr-sys-01) |
+| `GET` | `/api/v1/performance/resources` | [`getPerformanceResources`](#getperformanceresources) | `performance` | `bearerAuth` | 200, 401, 500 | [FR-PERF-01](requirements/functional-requirements.md#fr-perf-01) |
+| `GET` | `/api/v1/performance/cpu` | [`getCpuPerformance`](#getcpuperformance) | `performance` | `bearerAuth` | 200, 401, 500 | [FR-PERF-02](requirements/functional-requirements.md#fr-perf-02) |
 
 ## 3. Endpoints
 
@@ -59,6 +64,69 @@ Responses:
 | `401` | [`Unauthorized`](#resp-unauthorized) | `application/problem+json` | [`Problem`](#problem) | — |
 | `500` | [`InternalError`](#resp-internalerror) | `application/problem+json` | [`Problem`](#problem) | — |
 
+<a id="getsystemoverview"></a>
+### 3.2 `getSystemOverview` — `GET /api/v1/system/overview`
+
+| Item | Value |
+|---|---|
+| Summary | Machine identity, uptime and quick stats for the app shell (header, tabs, status bar). |
+| Tag | `system` |
+| Auth | `bearerAuth` |
+| Parameters | none |
+| Request body | none |
+| Requirement | [FR-SYS-01](requirements/functional-requirements.md#fr-sys-01) |
+| Design | [LLD-04](design/lld/LLD-04-metrics-collection.md), [LLD-05](design/lld/LLD-05-live-performance-ui.md) |
+
+Responses:
+
+| Status | Description | Content type | Schema | Example |
+|---|---|---|---|---|
+| `200` | Current overview. | `application/json` | [`SystemOverview`](#systemoverview) | — |
+| `401` | [`Unauthorized`](#resp-unauthorized) | `application/problem+json` | [`Problem`](#problem) | — |
+| `500` | [`InternalError`](#resp-internalerror) (also while metrics sampling fails) | `application/problem+json` | [`Problem`](#problem) | — |
+
+<a id="getperformanceresources"></a>
+### 3.3 `getPerformanceResources` — `GET /api/v1/performance/resources`
+
+| Item | Value |
+|---|---|
+| Summary | Every monitored resource (CPU, memory, disks, network adapters, GPUs) with its 60-second history. |
+| Tag | `performance` |
+| Auth | `bearerAuth` |
+| Parameters | none |
+| Request body | none |
+| Requirement | [FR-PERF-01](requirements/functional-requirements.md#fr-perf-01) |
+| Design | [LLD-04](design/lld/LLD-04-metrics-collection.md), [LLD-05](design/lld/LLD-05-live-performance-ui.md) |
+
+Responses:
+
+| Status | Description | Content type | Schema | Example |
+|---|---|---|---|---|
+| `200` | Resource list in display order. | `application/json` | [`PerformanceResources`](#performanceresources) | — |
+| `401` | [`Unauthorized`](#resp-unauthorized) | `application/problem+json` | [`Problem`](#problem) | — |
+| `500` | [`InternalError`](#resp-internalerror) (also while metrics sampling fails) | `application/problem+json` | [`Problem`](#problem) | — |
+
+<a id="getcpuperformance"></a>
+### 3.4 `getCpuPerformance` — `GET /api/v1/performance/cpu`
+
+| Item | Value |
+|---|---|
+| Summary | Everything shown by the Performance > CPU screen. |
+| Tag | `performance` |
+| Auth | `bearerAuth` |
+| Parameters | none |
+| Request body | none |
+| Requirement | [FR-PERF-02](requirements/functional-requirements.md#fr-perf-02) |
+| Design | [LLD-04](design/lld/LLD-04-metrics-collection.md), [LLD-05](design/lld/LLD-05-live-performance-ui.md) |
+
+Responses:
+
+| Status | Description | Content type | Schema | Example |
+|---|---|---|---|---|
+| `200` | Current CPU performance data. | `application/json` | [`CpuPerformance`](#cpuperformance) | — |
+| `401` | [`Unauthorized`](#resp-unauthorized) | `application/problem+json` | [`Problem`](#problem) | — |
+| `500` | [`InternalError`](#resp-internalerror) (also while metrics sampling fails) | `application/problem+json` | [`Problem`](#problem) | — |
+
 ## 4. Schemas
 
 <a id="samplehelloresponse"></a>
@@ -68,19 +136,197 @@ Type: `object`
 
 | Field | Type | Required | Description |
 |---|---|---|---|
-| `message` | `string` | yes | Always `"@@Hello world@@"`. |
+| `message` | `string` | yes | Always "@@Hello world@@". |
 
 <a id="problem"></a>
 ### 4.2 `Problem`
 
-Type: `object` — error body (RFC 7807, media type `application/problem+json`).
+Type: `object` — Error body (RFC 7807, media type application/problem+json).
 
 | Field | Type | Required | Description |
 |---|---|---|---|
-| `type` | `string` | yes | URI reference identifying the problem type; `"about:blank"` when generic. |
-| `title` | `string` | yes | Short, human-readable summary (e.g. `"Unauthorized"`). |
+| `type` | `string` | yes | URI reference identifying the problem type; "about:blank" when generic. |
+| `title` | `string` | yes | Short, human-readable summary (e.g. "Unauthorized"). |
 | `status` | `integer` | yes | HTTP status code. |
 | `detail` | `string` | no | Human-readable explanation specific to this occurrence. |
+
+<a id="percenthistory"></a>
+### 4.3 `PercentHistory`
+
+Type: array of `number` — Samples in percent (0..100), oldest first, one per sample interval. At most 61 items (60 seconds); shorter right after the backend started.
+
+<a id="systemoverview"></a>
+### 4.4 `SystemOverview`
+
+Type: `object`
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `machine` | [`MachineInfo`](#machineinfo) | yes | — |
+| `bootTime` | `string` (`date-time`) | yes | When the operating system booted (UTC, RFC 3339). |
+| `uptimeSeconds` | `integer` | yes | Seconds since bootTime. |
+| `sampleIntervalMs` | `integer` | yes | How often the backend samples the operating system (1000). |
+| `processCount` | `integer` | yes | — |
+| `serviceCount` | `integer` \| `null` | yes | Number of installed services; null when the platform provider cannot count them. |
+| `cpuPercent` | `number` | yes | Total CPU usage over the last sample interval (0..100). |
+| `memoryPercent` | `number` | yes | Physical memory in use (0..100). |
+| `diskPercent` | `number` \| `null` | yes | Active time of the busiest disk over the last interval; null when there is no disk data. |
+| `network` | [`NetworkThroughput`](#networkthroughput) | yes | — |
+| `topMemoryProcess` | [`TopMemoryProcess`](#topmemoryprocess) \| `null` | yes | Process using the most memory; null when the process list is empty. |
+
+<a id="machineinfo"></a>
+### 4.5 `MachineInfo`
+
+Type: `object`
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `hostName` | `string` | yes | — |
+| `osName` | `string` | yes | Product name, e.g. "Windows 10 Home" or "Ubuntu 24.04.1 LTS". |
+| `osVersion` | `string` | yes | Windows - major.minor.build; Linux - kernel release. |
+| `architecture` | `string` | yes | e.g. "x64", "arm64". |
+| `userName` | `string` | yes | User the backend runs as. |
+| `sessionName` | `string` | yes | Windows - window station name of the session ("Console", "RDP-Tcp#0"); Linux - session type ("x11", "wayland", "tty"). |
+
+<a id="networkthroughput"></a>
+### 4.6 `NetworkThroughput`
+
+Type: `object`
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `sendBitsPerSecond` | `number` | yes | — |
+| `receiveBitsPerSecond` | `number` | yes | — |
+
+<a id="topmemoryprocess"></a>
+### 4.7 `TopMemoryProcess`
+
+Type: `object`
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `name` | `string` | yes | — |
+| `memoryBytes` | `integer` | yes | — |
+
+<a id="performanceresources"></a>
+### 4.8 `PerformanceResources`
+
+Type: `object`
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `resources` | array of [`PerformanceResource`](#performanceresource) | yes | Display order - cpu, memory, disks, network adapters, GPUs. |
+
+<a id="performanceresource"></a>
+### 4.9 `PerformanceResource`
+
+Type: `object` — One row of the resource sidebar. Fields that do not apply to the kind are null.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `id` | `string` | yes | Stable identifier, e.g. "cpu", "memory", "disk0", "net-eth0", "gpu0". |
+| `kind` | `string` enum: `cpu`, `memory`, `disk`, `ethernet`, `wifi`, `gpu` | yes | — |
+| `name` | `string` | yes | Display name, e.g. "CPU", "Disk 0 (C: E:)", "Wi-Fi". |
+| `description` | `string` \| `null` | yes | Disk - media type ("SSD", "HDD"); network - adapter description; GPU - adapter model. |
+| `percent` | `number` \| `null` | yes | Current load (0..100): CPU usage, memory in use, disk active time, GPU utilization. Null for network adapters and when the value is not available. |
+| `history` | [`PercentHistory`](#percenthistory) | yes | Sparkline. Network adapters - total throughput scaled to the peak of the window (at least 100 kbit/s full scale). Unavailable values are sent as 0. |
+| `frequencyMhz` | `number` \| `null` | yes | cpu only - current clock. |
+| `usedBytes` | `integer` \| `null` | yes | memory only. |
+| `totalBytes` | `integer` \| `null` | yes | memory only. |
+| `sendBitsPerSecond` | `number` \| `null` | yes | ethernet / wifi only. |
+| `receiveBitsPerSecond` | `number` \| `null` | yes | ethernet / wifi only. |
+| `temperatureCelsius` | `number` \| `null` | yes | gpu only, when a sensor is readable. |
+
+<a id="cpuperformance"></a>
+### 4.10 `CpuPerformance`
+
+Type: `object`
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `info` | [`CpuInfo`](#cpuinfo) | yes | — |
+| `usagePercent` | `number` | yes | Total CPU usage over the last sample interval (0..100). |
+| `frequencyMhz` | `number` \| `null` | yes | Current clock averaged over all logical processors. |
+| `frequencyPercent` | `number` \| `null` | yes | frequencyMhz relative to the highest clock known (maximum reported by the OS or observed), 0..100. |
+| `temperatureCelsius` | `number` \| `null` | yes | CPU package temperature; null when no sensor is readable (typical in virtual machines). |
+| `processCount` | `integer` | yes | — |
+| `threadCount` | `integer` | yes | — |
+| `handleCount` | `integer` \| `null` | yes | Windows - open handles; Linux - allocated file handles (/proc/sys/fs/file-nr). |
+| `bootTime` | `string` (`date-time`) | yes | — |
+| `uptimeSeconds` | `integer` | yes | — |
+| `history` | [`CpuHistory`](#cpuhistory) | yes | — |
+| `topProcesses` | array of [`CpuProcess`](#cpuprocess) | yes | Up to 10 processes with the highest CPU usage over the last interval, highest first. |
+| `timeBreakdown` | [`CpuTimeBreakdown`](#cputimebreakdown) | yes | — |
+| `scheduler` | [`SchedulerActivity`](#scheduleractivity) | yes | — |
+
+<a id="cpuinfo"></a>
+### 4.11 `CpuInfo`
+
+Type: `object`
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `model` | `string` | yes | — |
+| `sockets` | `integer` | yes | — |
+| `cores` | `integer` | yes | — |
+| `logicalProcessors` | `integer` | yes | — |
+| `baseSpeedMhz` | `number` \| `null` | yes | — |
+| `virtualization` | `string` enum: `enabled`, `disabled`, `unknown` | yes | — |
+| `l1CacheBytes` | `integer` \| `null` | yes | Sum of all L1 data and instruction caches. |
+| `l2CacheBytes` | `integer` \| `null` | yes | — |
+| `l3CacheBytes` | `integer` \| `null` | yes | — |
+
+<a id="cpuhistory"></a>
+### 4.12 `CpuHistory`
+
+Type: `object`
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `usagePercent` | [`PercentHistory`](#percenthistory) | yes | — |
+| `frequencyPercent` | array of `number` \| `null` | yes | Same sample times as usagePercent; null where the clock was not available. |
+| `temperatureCelsius` | array of `number` \| `null` | yes | Same sample times as usagePercent; null where the temperature was not available. |
+
+<a id="cpuprocess"></a>
+### 4.13 `CpuProcess`
+
+Type: `object`
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `pid` | `integer` | yes | — |
+| `name` | `string` | yes | — |
+| `cpuPercent` | `number` | yes | Share of the total capacity of all logical processors (0..100). |
+| `memoryBytes` | `integer` | yes | Windows - private working set; Linux - resident set size. |
+| `isSelf` | `boolean` | yes | True for the backend itself and the process that started it (the SystemLens UI). |
+
+<a id="cputimebreakdown"></a>
+### 4.14 `CpuTimeBreakdown`
+
+Type: `object` — How CPU time of the last interval was split, all cores together. The five percents add up to 100.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `userPercent` | `number` | yes | — |
+| `kernelPercent` | `number` | yes | Kernel time excluding dpcPercent and interruptPercent. |
+| `dpcPercent` | `number` | yes | Windows - DPC time; Linux - softirq time. |
+| `interruptPercent` | `number` | yes | Hardware interrupt time. |
+| `idlePercent` | `number` | yes | Linux - includes iowait and steal. |
+| `history.userPercent` | [`PercentHistory`](#percenthistory) | yes | — |
+| `history.kernelPercent` | [`PercentHistory`](#percenthistory) | yes | Kernel + DPC + interrupt. |
+
+<a id="scheduleractivity"></a>
+### 4.15 `SchedulerActivity`
+
+Type: `object` — System-wide rates over the last interval; null when the platform does not expose the counter.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `contextSwitchesPerSecond` | `number` \| `null` | yes | — |
+| `interruptsPerSecond` | `number` \| `null` | yes | — |
+| `systemCallsPerSecond` | `number` \| `null` | yes | Not available on Linux. |
+| `dpcsPerSecond` | `number` \| `null` | yes | Windows - DPCs queued; Linux - softirqs raised. |
+| `source` | `string` | yes | Where the counters come from, e.g. "PDH \System, \Processor(_Total)" or "/proc/stat". |
 
 ## 5. Reusable responses
 

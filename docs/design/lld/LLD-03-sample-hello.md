@@ -112,7 +112,7 @@ sequenceDiagram
 
 | Function | File | Purpose | Parameters | Return | Errors | Flowchart |
 |---|---|---|---|---|---|---|
-| `bootstrap()` | `app.js` | Get the backend config, call the sample API and render the result. Called once when the module loads. | — | `Promise<void>` | none (all caught) | [F1](#f1) |
+| `bootstrap()` | `app.js` | Mount the UI, get the backend config, start the live data refresh ([LLD-05](LLD-05-live-performance-ui.md)), call the sample API and render the result. Called once when the module loads. | — | `Promise<void>` | none (all caught) | [F1](#f1) |
 | `render(text, isError = false)` | `app.js` | Show a message or an error in `#message`. | `text`; `isError` toggles class `error` | — | — | [F2](#f2) |
 | `getSampleHello(client)` | `sampleHelloApi.js` | Fetch the greeting. | `client`: configured `ApiClient` | `Promise<string>` (`"@@Hello world@@"`) | `ApiError` | — |
 
@@ -137,10 +137,12 @@ Wiring (in `Application::registerControllers()`, [LLD-01](LLD-01-backend-lifecyc
 
 ```mermaid
 flowchart TD
-    S(["module loaded"]) --> C["config = await window.systemlens.getBackendConfig()"]
+    S(["module loaded"]) --> U["ui = mountUi()"]
+    U --> C["config = await window.systemlens.getBackendConfig()"]
     C -- "throws" --> ERR
     C --> N["client = new ApiClient(config)"]
-    N --> G["greeting = await getSampleHello(client)"]
+    N --> L["startLiveData(client, ui) - see LLD-05"]
+    L --> G["greeting = await getSampleHello(client)"]
     G -- "throws ApiError" --> ERR["console.error(err)<br/>render(Cannot reach backend: err.message, true)"]
     G --> R["render(greeting)"]
     R --> E(["end"])

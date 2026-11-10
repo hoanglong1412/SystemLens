@@ -86,7 +86,9 @@ Errors produced by the server itself (not by controllers):
 
 | Rule | Source |
 |---|---|
-| Layering: `HttpServer` → Controller (`IController`) → Service (interface + implementation). | `IController.h`, `ISampleHelloService.h` |
+| Layering: `HttpServer` → Controller (`IController`) → Service (interface + implementation) → Provider (interface + one implementation per operating system). | `IController.h`, `ISampleHelloService.h`, `providers/PlatformProviders.h` |
+| Code that depends on the operating system lives only under `backend/src/providers/<os>/`; services see provider interfaces. | `backend/CMakeLists.txt`, [LLD-04](design/lld/LLD-04-metrics-collection.md) |
+| Fields carry their unit in the name (`...Percent`, `...Bytes`, `...Mhz`, `...BitsPerSecond`, `...Seconds`); values the platform cannot provide are `null`; timestamps are RFC 3339 UTC strings. Formatting for display is done by the frontend. | `api/openapi.yaml`, `api/JsonHelpers.h`, `frontend/renderer/ui/format.js` |
 | A controller owns no business logic: Request → service call → `ok(...)`. | `IController.h`, `SampleHelloController.h` |
 | Services are injected into controllers through the constructor as interfaces; a null service throws `std::invalid_argument`. | `SampleHelloController.cpp` |
 | Controllers are created and registered in `Application::registerControllers()` (composition root). | `Application.cpp` |

@@ -22,8 +22,11 @@ docs/
 │       ├── _template.md                   template for a new LLD
 │       ├── LLD-01-backend-lifecycle.md    start / handshake / shutdown of the backend process
 │       ├── LLD-02-api-request-pipeline.md one API call from ApiClient to the controller and back
-│       └── LLD-03-sample-hello.md         sample feature: show the greeting from GET /api/v1/sample/hello
-└── ui-design/                             Figma / UI design files (none yet)
+│       ├── LLD-03-sample-hello.md         sample feature: show the greeting from GET /api/v1/sample/hello
+│       ├── LLD-04-metrics-collection.md   backend: platform providers, sampler, system / performance APIs
+│       └── LLD-05-live-performance-ui.md  frontend: live app shell and Performance › CPU screen
+├── decisions/                             design decisions taken by the AI on the owner's behalf, with reasons
+└── ui-design/                             link to the Figma design
 ```
 
 Source of truth outside `docs/`:
@@ -50,6 +53,8 @@ Areas currently in use:
 | Area | Meaning |
 |---|---|
 | `SMP` | Sample API / sample feature (exists only to prove FE ↔ BE communication) |
+| `SYS` | Machine-wide information shown by the app shell |
+| `PERF` | Performance tab |
 
 Rules:
 - An ID is never reused or renumbered; a removed item keeps its ID with status `Removed`.
@@ -61,6 +66,8 @@ Rules:
 | Requirement | HLD | LLD | API (`operationId`) | Source |
 |---|---|---|---|---|
 | [FR-SMP-01](requirements/functional-requirements.md#fr-smp-01) / [UC-SMP-01](requirements/functional-requirements.md#uc-smp-01) | [HLD-02](design/high-level-design.md#hld-02) | [LLD-03](design/lld/LLD-03-sample-hello.md) | [`getSampleHello`](api-schema.md#getsamplehello) | `frontend/renderer/app.js`, `frontend/renderer/api/sample/sampleHelloApi.js`, `backend/src/api/sample/*`, `backend/src/services/sample/*` |
+| [FR-SYS-01](requirements/functional-requirements.md#fr-sys-01) / [UC-SYS-01](requirements/functional-requirements.md#uc-sys-01) | [HLD-06](design/high-level-design.md#hld-06) | [LLD-04](design/lld/LLD-04-metrics-collection.md), [LLD-05](design/lld/LLD-05-live-performance-ui.md) | [`getSystemOverview`](api-schema.md#getsystemoverview) | `frontend/renderer/shell/*`, `frontend/renderer/api/system/systemApi.js`, `frontend/renderer/live/liveDataLoop.js`, `backend/src/api/system/*`, `backend/src/services/system/*`, `backend/src/services/monitoring/*`, `backend/src/providers/*` |
+| [FR-PERF-01](requirements/functional-requirements.md#fr-perf-01), [FR-PERF-02](requirements/functional-requirements.md#fr-perf-02) / [UC-PERF-01](requirements/functional-requirements.md#uc-perf-01) | [HLD-06](design/high-level-design.md#hld-06) | [LLD-04](design/lld/LLD-04-metrics-collection.md), [LLD-05](design/lld/LLD-05-live-performance-ui.md) | [`getPerformanceResources`](api-schema.md#getperformanceresources), [`getCpuPerformance`](api-schema.md#getcpuperformance) | `frontend/renderer/views/cpu/*`, `frontend/renderer/api/performance/performanceApi.js`, `frontend/renderer/ui/*`, `backend/src/api/performance/*`, `backend/src/services/performance/*`, `backend/src/services/monitoring/*`, `backend/src/providers/*` |
 | [NFR-01](requirements/non-functional-requirements.md#nfr-01) | [HLD-01](design/high-level-design.md#hld-01), [HLD-05](design/high-level-design.md#hld-05) | [LLD-02](design/lld/LLD-02-api-request-pipeline.md) | all | `api/openapi.yaml` |
 | [NFR-02](requirements/non-functional-requirements.md#nfr-02) | [HLD-01](design/high-level-design.md#hld-01), [HLD-03](design/high-level-design.md#hld-03), [HLD-05](design/high-level-design.md#hld-05) | [LLD-01](design/lld/LLD-01-backend-lifecycle.md), [LLD-02](design/lld/LLD-02-api-request-pipeline.md) | all | `frontend/renderer/api/apiClient.js`, `frontend/main/ipcChannels.js`, `frontend/preload/preload.js`, `backend/src/api/HttpTypes.h`, `backend/src/api/IRouteRegistry.h`, `backend/src/api/HttpServer.*` |
 | [NFR-03](requirements/non-functional-requirements.md#nfr-03) | — (not implemented) | — | — | — |

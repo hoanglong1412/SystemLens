@@ -249,3 +249,10 @@
   font-size: 24px;
   line-height: 29px;
 }
+
+/* ---- Update slot ----
+ * Wrapper whose children are replaced on every data refresh. It generates no box, so the
+ * replaced children lay out exactly as if they were direct children of the slot's parent. */
+.slot {
+  display: contents;
+}

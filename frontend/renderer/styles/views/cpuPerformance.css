@@ -16,6 +16,9 @@
   padding: 8px 0 0 6px;
   border-right: 1px solid var(--border);
   background: var(--bg-surface);
+  /* The number of disks, adapters and GPUs depends on the machine. */
+  overflow-y: auto;
+  scrollbar-width: thin;
 }
 
 .resources__info {
@@ -42,6 +45,7 @@
 }
 
 .resource__text {
+  min-width: 0;
   margin-left: 12px;
 }
 
@@ -57,6 +61,9 @@
   line-height: 13px;
   color: var(--text-muted);
   white-space: nowrap;
+  /* Adapter and GPU model names can be longer than the row. */
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ---- CPU detail panel ---- */
@@ -348,6 +355,15 @@
   margin-top: 11px;
   overflow: hidden;
   border-radius: 3px;
+}
+
+.breakdown__seg {
+  flex: none;
+}
+
+/* The last part (Idle) takes whatever the other parts leave. */
+.breakdown__seg--rest {
+  flex: 1 1 0;
 }
 
 .breakdown__legend {
