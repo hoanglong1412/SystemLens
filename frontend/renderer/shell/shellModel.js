@@ -20,14 +20,19 @@ function chip(id, label, percent) {
 }
 
 /**
- * Tab captions, with the live counts where known ("Processes (253)").
+ * Tabs with their captions (live counts where known, e.g. "Processes (253)") and the active flag.
  * @param {object|null} overview
- * @returns {string[]}
+ * @param {string} activeTabId
+ * @returns {Array<{id: string, caption: string, active: boolean}>}
  */
-function tabCaptions(overview) {
-  return SHELL_TEXTS.tabs.map(({ name, count }) => {
+function toTabs(overview, activeTabId) {
+  return SHELL_TEXTS.tabs.map(({ id, name, count }) => {
     const value = count ? overview?.[count] : null;
-    return typeof value === 'number' ? `${name} (${value})` : name;
+    return {
+      id,
+      caption: typeof value === 'number' ? `${name} (${value})` : name,
+      active: id === activeTabId,
+    };
   });
 }
 
@@ -35,13 +40,15 @@ function tabCaptions(overview) {
  * Build the shell display data.
  * @param {object|null} overview SystemOverview from the API; null before the first response.
  * @param {boolean} connected Whether the last refresh succeeded.
+ * @param {string} activeTabId Id of the tab on display (see SHELL_TEXTS.tabs).
  * @returns {object} Data for createAppShell / AppShell.update.
  */
-export function toShellData(overview, connected) {
+export function toShellData(overview, connected, activeTabId) {
   const machine = overview?.machine;
   const texts = SHELL_TEXTS.status;
+  const activeName = SHELL_TEXTS.tabs.find((tab) => tab.id === activeTabId)?.name;
   return {
-    windowTitle: SHELL_TEXTS.windowTitle,
+    windowTitle: activeName ? `${SHELL_TEXTS.windowTitle} — ${activeName}` : SHELL_TEXTS.windowTitle,
     machine: {
       name: machine?.hostName || NO_VALUE,
       os: machine ? `${machine.osName} ${machine.architecture}`.trim() : NO_VALUE,
@@ -65,8 +72,7 @@ export function toShellData(overview, connected) {
         value: formatMegabytes(overview?.topMemoryProcess?.memoryBytes ?? null),
       },
     },
-    tabs: tabCaptions(overview),
-    activeTab: SHELL_TEXTS.activeTab,
+    tabs: toTabs(overview, activeTabId),
     status: {
       connected,
       connection: [connected ? texts.connected : texts.disconnected, texts.updateSpeed],

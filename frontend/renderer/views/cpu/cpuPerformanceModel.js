@@ -1,21 +1,17 @@
 /**
  * @file   cpuPerformanceModel.js
- * @brief  Turns the PerformanceResource[] and CpuPerformance API objects into the display data of
- *         the Performance > CPU screen (the object cpuPerformanceView.js renders). No DOM here.
+ * @brief  Turns the CpuPerformance and CpuCores API objects into the display data of the Performance > CPU
+ *         panel (the object cpuPerformanceView.js renders). No DOM here.
  *
  * Series are percentages (0..100 of the plot height), oldest sample first.
  */
 import {
-  NO_VALUE, formatBitRate, formatCacheSize, formatCount, formatDateTime, formatFrequency,
+  NO_VALUE, formatCacheSize, formatCount, formatDateTime, formatFrequency,
   formatGigabytesValue, formatInteger, formatMegabytes, formatPercent, formatTemperature, formatUptime,
 } from '../../ui/format.js';
+import { MAX_PERCENT, gaplessHistory, padHistory } from '../../ui/series.js';
 import { CPU_TEXTS } from './cpuPerformanceTexts.js';
 
-/** Points per plot: 60 one-second intervals. Shorter histories are padded on the left. */
-const HISTORY_POINTS = 61;
-const MAX_PERCENT = 100;
-/** Id of the resource whose detail panel is shown (the only one implemented). */
-const SELECTED_RESOURCE_ID = 'cpu';
 /** Longest process name that fits its column; longer names end with "...". */
 const MAX_PROCESS_NAME_LENGTH = 17;
 const ELLIPSIS = '...';
@@ -25,93 +21,6 @@ const BREAKDOWN_MIN_SEGMENT_WIDTH = 6;
 /** Background of the CPU % cell: from an idle row to the busiest row of the table (RGB). */
 const CPU_SHADE_LOW = [0x25, 0x40, 0x36];
 const CPU_SHADE_HIGH = [0x2d, 0xaf, 0x6a];
-
-/** Sparkline colour per resource kind. */
-const RESOURCE_COLORS = Object.freeze({
-  cpu: 'var(--green)',
-  memory: 'var(--blue)',
-  disk: 'var(--lime)',
-  ethernet: 'var(--orange-dim)',
-  wifi: 'var(--orange-dark)',
-  gpu: 'var(--purple)',
-});
-
-/**
- * Bring a history to exactly HISTORY_POINTS values so every plot has the same time axis.
- * @param {Array<number|null>|undefined} values Samples, oldest first.
- * @param {number|null} filler Value for the samples that do not exist yet.
- * @returns {Array<number|null>}
- */
-function padHistory(values, filler) {
-  const recent = (values ?? []).slice(-HISTORY_POINTS);
-  return [...new Array(HISTORY_POINTS - recent.length).fill(filler), ...recent];
-}
-
-/**
- * Prepare a history that may contain gaps (null) for plotting.
- * @param {Array<number|null>|undefined} values Samples, oldest first.
- * @returns {number[]|null} Padded series where each gap repeats the nearest known value;
- *          null when no sample is known (the series is then not drawn).
- */
-function gaplessHistory(values) {
-  const padded = padHistory(values, null);
-  const firstKnown = padded.find((value) => value !== null);
-  if (firstKnown === undefined) return null;
-  let last = firstKnown;
-  return padded.map((value) => {
-    if (value !== null) last = value;
-    return Math.min(last, MAX_PERCENT);
-  });
-}
-
-/**
- * Detail line of a sidebar resource, depending on its kind.
- * @param {object} resource PerformanceResource.
- * @returns {string[]} Parts joined with "·" by the view.
- */
-function resourceDetail(resource) {
-  const percent = formatPercent(resource.percent);
-  switch (resource.kind) {
-    case 'cpu':
-      return resource.frequencyMhz === null ? [percent] : [percent, formatFrequency(resource.frequencyMhz)];
-    case 'memory':
-      return [`${formatGigabytesValue(resource.usedBytes)}/${formatGigabytesValue(resource.totalBytes)} GB (${percent})`];
-    case 'disk':
-      return resource.description ? [resource.description, percent] : [percent];
-    case 'ethernet':
-      return [
-        resource.description ?? NO_VALUE,
-        formatBitRate((resource.sendBitsPerSecond ?? 0) + (resource.receiveBitsPerSecond ?? 0)),
-      ];
-    case 'wifi':
-      return [`S ${formatBitRate(resource.sendBitsPerSecond)}  R ${formatBitRate(resource.receiveBitsPerSecond)}`];
-    case 'gpu': {
-      const load = resource.temperatureCelsius === null
-        ? percent
-        : `${percent} (${formatTemperature(resource.temperatureCelsius)})`;
-      return [resource.description ?? NO_VALUE, load];
-    }
-    default:
-      return [percent];
-  }
-}
-
-/**
- * Sidebar rows.
- * @param {object[]|null} resources PerformanceResource[]; null before the first response.
- * @returns {object[]}
- */
-function toResources(resources) {
-  return (resources ?? []).map((resource) => ({
-    id: resource.id,
-    name: resource.name,
-    detail: resourceDetail(resource),
-    color: RESOURCE_COLORS[resource.kind] ?? RESOURCE_COLORS.cpu,
-    fill: true,
-    selected: resource.id === SELECTED_RESOURCE_ID,
-    series: padHistory(resource.history, 0),
-  }));
-}
 
 /**
  * Shorten a process name to the width of its column.
@@ -180,12 +89,25 @@ function toBreakdownParts(breakdown) {
 }
 
 /**
- * Build the display data of the CPU screen.
- * @param {object[]|null} resources PerformanceResource[] from the API; null before the first response.
- * @param {object|null} cpu CpuPerformance from the API; null before the first response.
- * @returns {object} Data for CpuPerformanceView.update.
+ * One card per logical processor.
+ * @param {object|null} cores CpuCores from the API; null before the first response.
+ * @returns {Array<{label: string, value: string, series: number[]}>}
  */
-export function toCpuViewData(resources, cpu) {
+function toCores(cores) {
+  return (cores?.cores ?? []).map((core) => ({
+    label: `${CPU_TEXTS.cores.coreLabel} ${core.index}`,
+    value: formatPercent(core.usagePercent),
+    series: padHistory(core.history, 0),
+  }));
+}
+
+/**
+ * Build the display data of the CPU panel.
+ * @param {object|null} cpu CpuPerformance from the API; null before the first response.
+ * @param {object|null} cores CpuCores from the API; null before the first response.
+ * @returns {object} Data for the CPU panel's update().
+ */
+export function toCpuViewData(cpu, cores) {
   const texts = CPU_TEXTS;
   const info = cpu?.info;
   const scheduler = cpu?.scheduler;
@@ -200,7 +122,7 @@ export function toCpuViewData(resources, cpu) {
   ];
 
   return {
-    resources: toResources(resources),
+    cores: toCores(cores),
 
     header: {
       model: info?.model ?? NO_VALUE,

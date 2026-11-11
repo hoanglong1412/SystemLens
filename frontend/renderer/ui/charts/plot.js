@@ -61,9 +61,11 @@ function gridLines(width, height, { columns, rows }) {
  *        (later series on top). fill draws a translucent area under the line.
  * @param {string} [options.className] Extra class on the <svg>.
  * @param {number} [options.inset] Margin (px) between the series and the plot edges.
+ * @param {boolean} [options.fluid] Stretch to the width of the container (width is then only the drawing
+ *        width of the viewBox); strokes keep their thickness (see .plot--fluid in components.css).
  * @returns {SVGElement}
  */
-export function plot({ width, height, grid, series, className = '', inset = 0 }) {
+export function plot({ width, height, grid, series, className = '', inset = 0, fluid = false }) {
   const children = grid ? gridLines(width, height, grid) : [];
   const bottom = height - inset;
   for (const { values, color, fill } of series) {
@@ -81,6 +83,11 @@ export function plot({ width, height, grid, series, className = '', inset = 0 })
   // The border is drawn last on top so lines touching the edges do not cover it.
   children.push(s('rect', { class: 'plot__border', x: 0.5, y: 0.5, width: width - 1, height: height - 1 }));
   return s('svg', {
-    class: `plot ${className}`.trim(), width, height, viewBox: `0 0 ${width} ${height}`,
+    class: `plot ${fluid ? 'plot--fluid' : ''} ${className}`.replace(/\s+/g, ' ').trim(),
+    // A fluid plot gets its width from CSS; preserveAspectRatio none lets the drawing stretch with it.
+    width: fluid ? null : width,
+    height,
+    viewBox: `0 0 ${width} ${height}`,
+    preserveAspectRatio: fluid ? 'none' : null,
   }, children);
 }

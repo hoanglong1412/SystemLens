@@ -49,8 +49,10 @@ std::string resolveName(std::string_view comm, const std::string& rawCommand)
 {
     if (comm.size() == kMaxCommLength)
     {
-        // argv[0] is everything up to the first NUL.
+        // argv[0] is everything up to the first NUL. Programs that rewrite their own argv (Chrome, Node) store
+        // the whole command line in one NUL-free block, so the first space ends the program name as well.
         std::string_view program(rawCommand.c_str());
+        program = program.substr(0, program.find(' '));
         if (const auto slash = program.rfind('/'); slash != std::string_view::npos)
         {
             program.remove_prefix(slash + 1);

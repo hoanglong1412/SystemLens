@@ -1,0 +1,162 @@
+/*
+ * File : resourceDetail.css
+ * Brief: Panels on the right of the Performance sidebar: the panel host, the CPU per-core grid and the
+ *        generic detail panel used by Memory, Disk, Network and GPU. Widths follow the container.
+ */
+.perf__panel {
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  overflow-y: auto;
+}
+
+/* ---- CPU per-core grid ---- */
+.cores {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+  max-height: calc(100% - 104px);
+  margin-top: 8px;
+  padding-bottom: 12px;
+  overflow-y: auto;
+}
+
+.core {
+  padding: 10px 12px 12px;
+}
+
+.core__head {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 12px;
+  line-height: 15px;
+}
+
+.core__label {
+  color: var(--text-muted);
+}
+
+.core__value {
+  font-weight: 600;
+}
+
+/* ---- Generic detail panel ---- */
+.detail {
+  box-sizing: border-box;
+  padding: 0 16px 16px 20px;
+}
+
+.detail__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 14px 0 12px;
+}
+
+.detail__title {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 36px;
+}
+
+.detail__subtitle {
+  overflow: hidden;
+  font-size: 15px;
+  line-height: 18px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.detail__charts {
+  display: grid;
+  gap: 12px;
+}
+
+.detail__card {
+  padding: 9px 11px 11px;
+}
+
+.detail__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.detail__stats-card {
+  padding: 15px;
+}
+
+.detail__stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px 10px;
+}
+
+.detail__stats-info {
+  position: absolute;
+  top: 13px;
+  right: 13px;
+}
+
+.detail__info-card .card__title {
+  margin-bottom: 15px;
+}
+
+.detail__info {
+  display: block;
+}
+
+.detail__table {
+  margin-top: 12px;
+}
+
+.detail__table:empty {
+  display: none;
+}
+
+.detail-table {
+  width: 100%;
+  margin-top: 8px;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 11px;
+  line-height: 13px;
+}
+
+.detail-table th,
+.detail-table td {
+  height: 22px;
+  padding: 0 8px;
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Memory table: PID, name (takes the rest), memory, CPU %. */
+.detail-table th:first-child {
+  width: 70px;
+}
+
+.detail-table th:nth-child(n + 3) {
+  width: 100px;
+}
+
+.detail-table th {
+  background: var(--bg-raised);
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.detail-table th.detail-table__cell--right,
+.detail-table td.detail-table__cell--right {
+  text-align: right;
+}
+
+.detail-table__row--self td {
+  color: var(--accent);
+}

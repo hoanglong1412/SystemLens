@@ -190,6 +190,13 @@
   line-height: 16px;
   color: var(--text-muted);
   white-space: nowrap;
+  cursor: pointer;
+  outline: none;
+}
+
+.tab:hover:not(.tab--active),
+.tab:focus-visible:not(.tab--active) {
+  color: var(--text);
 }
 
 .tab--active {

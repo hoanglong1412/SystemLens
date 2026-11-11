@@ -4,7 +4,7 @@
 |---|---|
 | Scope | The backend API as readable tables |
 | Source of truth | [`api/openapi.yaml`](../api/openapi.yaml) — **if this file and the YAML disagree, the YAML is right**; fix this file. |
-| Contract version | `0.2.0` (OpenAPI `3.1.0`, title "SystemLens Backend API") |
+| Contract version | `0.3.0` (OpenAPI `3.1.0`, title "SystemLens Backend API") |
 | Traces to | [NFR-01](requirements/non-functional-requirements.md#nfr-01) |
 | Rules | [api-convention.md](api-convention.md) |
 | Index / matrix | [docs/README.md](README.md#3-traceability-matrix) |
@@ -28,44 +28,35 @@
 
 | Tag | Description |
 |---|---|
+| `sample` | Sample endpoints: exercise the FE <-> BE plumbing and serve as reference examples for real APIs. Registered only when the backend is built with SYSTEMLENS_ENABLE_SAMPLE_API=ON. |
 | `system` | Machine identity and the always-visible quick stats shown by the app shell. |
 | `performance` | Live performance data of the Performance tab. Values come from a backend sampler that reads the operating system once per second and keeps the last 60 seconds of history. |
-| `sample` | Sample endpoints: exercise the FE ↔ BE plumbing and serve as reference examples for real APIs. Registered only when the backend is built with `SYSTEMLENS_ENABLE_SAMPLE_API=ON`. |
+| `processes` | Process list and per-application usage accumulated since the backend started. |
+| `inventory` | Services, startup items and user sessions. Answered with available=false on platforms that cannot provide them. |
 
 ## 2. Endpoint list
 
 | Method | Path | `operationId` | Tag | Auth | Responses | Requirement |
 |---|---|---|---|---|---|---|
-| `GET` | `/api/v1/sample/hello` | [`getSampleHello`](#getsamplehello) | `sample` | `bearerAuth` | 200, 401, 500 | [FR-SMP-01](requirements/functional-requirements.md#fr-smp-01) |
 | `GET` | `/api/v1/system/overview` | [`getSystemOverview`](#getsystemoverview) | `system` | `bearerAuth` | 200, 401, 500 | [FR-SYS-01](requirements/functional-requirements.md#fr-sys-01) |
 | `GET` | `/api/v1/performance/resources` | [`getPerformanceResources`](#getperformanceresources) | `performance` | `bearerAuth` | 200, 401, 500 | [FR-PERF-01](requirements/functional-requirements.md#fr-perf-01) |
 | `GET` | `/api/v1/performance/cpu` | [`getCpuPerformance`](#getcpuperformance) | `performance` | `bearerAuth` | 200, 401, 500 | [FR-PERF-02](requirements/functional-requirements.md#fr-perf-02) |
+| `GET` | `/api/v1/performance/cpu/cores` | [`getCpuCores`](#getcpucores) | `performance` | `bearerAuth` | 200, 401, 500 | [FR-PERF-07](requirements/functional-requirements.md#fr-perf-07) |
+| `GET` | `/api/v1/performance/memory` | [`getMemoryPerformance`](#getmemoryperformance) | `performance` | `bearerAuth` | 200, 401, 500 | [FR-PERF-03](requirements/functional-requirements.md#fr-perf-03) |
+| `GET` | `/api/v1/performance/disks` | [`getDiskPerformance`](#getdiskperformance) | `performance` | `bearerAuth` | 200, 401, 500 | [FR-PERF-04](requirements/functional-requirements.md#fr-perf-04) |
+| `GET` | `/api/v1/performance/networks` | [`getNetworkPerformance`](#getnetworkperformance) | `performance` | `bearerAuth` | 200, 401, 500 | [FR-PERF-05](requirements/functional-requirements.md#fr-perf-05) |
+| `GET` | `/api/v1/performance/gpus` | [`getGpuPerformance`](#getgpuperformance) | `performance` | `bearerAuth` | 200, 401, 500 | [FR-PERF-06](requirements/functional-requirements.md#fr-perf-06) |
+| `GET` | `/api/v1/processes` | [`getProcesses`](#getprocesses) | `processes` | `bearerAuth` | 200, 401, 500 | [FR-PROC-01](requirements/functional-requirements.md#fr-proc-01), [FR-PROC-02](requirements/functional-requirements.md#fr-proc-02) |
+| `GET` | `/api/v1/apps/history` | [`getAppHistory`](#getapphistory) | `processes` | `bearerAuth` | 200, 401, 500 | [FR-HIST-01](requirements/functional-requirements.md#fr-hist-01) |
+| `GET` | `/api/v1/services` | [`getServices`](#getservices) | `inventory` | `bearerAuth` | 200, 401, 500 | [FR-SVC-01](requirements/functional-requirements.md#fr-svc-01) |
+| `GET` | `/api/v1/startup` | [`getStartupItems`](#getstartupitems) | `inventory` | `bearerAuth` | 200, 401, 500 | [FR-START-01](requirements/functional-requirements.md#fr-start-01) |
+| `GET` | `/api/v1/users` | [`getUsers`](#getusers) | `inventory` | `bearerAuth` | 200, 401, 500 | [FR-USER-01](requirements/functional-requirements.md#fr-user-01) |
+| `GET` | `/api/v1/sample/hello` | [`getSampleHello`](#getsamplehello) | `sample` | `bearerAuth` | 200, 401, 500 | [FR-SMP-01](requirements/functional-requirements.md#fr-smp-01) |
 
 ## 3. Endpoints
 
-<a id="getsamplehello"></a>
-### 3.1 `getSampleHello` — `GET /api/v1/sample/hello`
-
-| Item | Value |
-|---|---|
-| Summary | Return a fixed greeting to prove FE ↔ BE communication works. |
-| Tag | `sample` |
-| Auth | `bearerAuth` |
-| Parameters | none |
-| Request body | none |
-| Requirement | [FR-SMP-01](requirements/functional-requirements.md#fr-smp-01) |
-| Design | [LLD-03](design/lld/LLD-03-sample-hello.md) |
-
-Responses:
-
-| Status | Description | Content type | Schema | Example |
-|---|---|---|---|---|
-| `200` | Greeting. | `application/json` | [`SampleHelloResponse`](#samplehelloresponse) | `{"message": "@@Hello world@@"}` |
-| `401` | [`Unauthorized`](#resp-unauthorized) | `application/problem+json` | [`Problem`](#problem) | — |
-| `500` | [`InternalError`](#resp-internalerror) | `application/problem+json` | [`Problem`](#problem) | — |
-
 <a id="getsystemoverview"></a>
-### 3.2 `getSystemOverview` — `GET /api/v1/system/overview`
+### 3.1 `getSystemOverview` — `GET /api/v1/system/overview`
 
 | Item | Value |
 |---|---|
@@ -83,10 +74,10 @@ Responses:
 |---|---|---|---|---|
 | `200` | Current overview. | `application/json` | [`SystemOverview`](#systemoverview) | — |
 | `401` | [`Unauthorized`](#resp-unauthorized) | `application/problem+json` | [`Problem`](#problem) | — |
-| `500` | [`InternalError`](#resp-internalerror) (also while metrics sampling fails) | `application/problem+json` | [`Problem`](#problem) | — |
+| `500` | [`InternalError`](#resp-internalerror) | `application/problem+json` | [`Problem`](#problem) | — |
 
 <a id="getperformanceresources"></a>
-### 3.3 `getPerformanceResources` — `GET /api/v1/performance/resources`
+### 3.2 `getPerformanceResources` — `GET /api/v1/performance/resources`
 
 | Item | Value |
 |---|---|
@@ -96,7 +87,7 @@ Responses:
 | Parameters | none |
 | Request body | none |
 | Requirement | [FR-PERF-01](requirements/functional-requirements.md#fr-perf-01) |
-| Design | [LLD-04](design/lld/LLD-04-metrics-collection.md), [LLD-05](design/lld/LLD-05-live-performance-ui.md) |
+| Design | [LLD-04](design/lld/LLD-04-metrics-collection.md), [LLD-06](design/lld/LLD-06-detail-and-inventory.md), [LLD-07](design/lld/LLD-07-screens.md) |
 
 Responses:
 
@@ -104,10 +95,10 @@ Responses:
 |---|---|---|---|---|
 | `200` | Resource list in display order. | `application/json` | [`PerformanceResources`](#performanceresources) | — |
 | `401` | [`Unauthorized`](#resp-unauthorized) | `application/problem+json` | [`Problem`](#problem) | — |
-| `500` | [`InternalError`](#resp-internalerror) (also while metrics sampling fails) | `application/problem+json` | [`Problem`](#problem) | — |
+| `500` | [`InternalError`](#resp-internalerror) | `application/problem+json` | [`Problem`](#problem) | — |
 
 <a id="getcpuperformance"></a>
-### 3.4 `getCpuPerformance` — `GET /api/v1/performance/cpu`
+### 3.3 `getCpuPerformance` — `GET /api/v1/performance/cpu`
 
 | Item | Value |
 |---|---|
@@ -117,7 +108,7 @@ Responses:
 | Parameters | none |
 | Request body | none |
 | Requirement | [FR-PERF-02](requirements/functional-requirements.md#fr-perf-02) |
-| Design | [LLD-04](design/lld/LLD-04-metrics-collection.md), [LLD-05](design/lld/LLD-05-live-performance-ui.md) |
+| Design | [LLD-04](design/lld/LLD-04-metrics-collection.md), [LLD-06](design/lld/LLD-06-detail-and-inventory.md), [LLD-07](design/lld/LLD-07-screens.md) |
 
 Responses:
 
@@ -125,7 +116,238 @@ Responses:
 |---|---|---|---|---|
 | `200` | Current CPU performance data. | `application/json` | [`CpuPerformance`](#cpuperformance) | — |
 | `401` | [`Unauthorized`](#resp-unauthorized) | `application/problem+json` | [`Problem`](#problem) | — |
-| `500` | [`InternalError`](#resp-internalerror) (also while metrics sampling fails) | `application/problem+json` | [`Problem`](#problem) | — |
+| `500` | [`InternalError`](#resp-internalerror) | `application/problem+json` | [`Problem`](#problem) | — |
+
+<a id="getcpucores"></a>
+### 3.4 `getCpuCores` — `GET /api/v1/performance/cpu/cores`
+
+| Item | Value |
+|---|---|
+| Summary | Usage and 60-second history of every logical processor. |
+| Tag | `performance` |
+| Auth | `bearerAuth` |
+| Parameters | none |
+| Request body | none |
+| Requirement | [FR-PERF-07](requirements/functional-requirements.md#fr-perf-07) |
+| Design | [LLD-04](design/lld/LLD-04-metrics-collection.md), [LLD-06](design/lld/LLD-06-detail-and-inventory.md), [LLD-07](design/lld/LLD-07-screens.md) |
+
+Responses:
+
+| Status | Description | Content type | Schema | Example |
+|---|---|---|---|---|
+| `200` | Current data. | `application/json` | [`CpuCores`](#cpucores) | — |
+| `401` | [`Unauthorized`](#resp-unauthorized) | `application/problem+json` | [`Problem`](#problem) | — |
+| `500` | [`InternalError`](#resp-internalerror) | `application/problem+json` | [`Problem`](#problem) | — |
+
+<a id="getmemoryperformance"></a>
+### 3.5 `getMemoryPerformance` — `GET /api/v1/performance/memory`
+
+| Item | Value |
+|---|---|
+| Summary | Everything shown by the Performance > Memory screen. |
+| Tag | `performance` |
+| Auth | `bearerAuth` |
+| Parameters | none |
+| Request body | none |
+| Requirement | [FR-PERF-03](requirements/functional-requirements.md#fr-perf-03) |
+| Design | [LLD-04](design/lld/LLD-04-metrics-collection.md), [LLD-06](design/lld/LLD-06-detail-and-inventory.md), [LLD-07](design/lld/LLD-07-screens.md) |
+
+Responses:
+
+| Status | Description | Content type | Schema | Example |
+|---|---|---|---|---|
+| `200` | Current data. | `application/json` | [`MemoryPerformance`](#memoryperformance) | — |
+| `401` | [`Unauthorized`](#resp-unauthorized) | `application/problem+json` | [`Problem`](#problem) | — |
+| `500` | [`InternalError`](#resp-internalerror) | `application/problem+json` | [`Problem`](#problem) | — |
+
+<a id="getdiskperformance"></a>
+### 3.6 `getDiskPerformance` — `GET /api/v1/performance/disks`
+
+| Item | Value |
+|---|---|
+| Summary | Detail of every physical disk (Performance > Disk screens). |
+| Tag | `performance` |
+| Auth | `bearerAuth` |
+| Parameters | none |
+| Request body | none |
+| Requirement | [FR-PERF-04](requirements/functional-requirements.md#fr-perf-04) |
+| Design | [LLD-04](design/lld/LLD-04-metrics-collection.md), [LLD-06](design/lld/LLD-06-detail-and-inventory.md), [LLD-07](design/lld/LLD-07-screens.md) |
+
+Responses:
+
+| Status | Description | Content type | Schema | Example |
+|---|---|---|---|---|
+| `200` | Current data. | `application/json` | [`DiskPerformance`](#diskperformance) | — |
+| `401` | [`Unauthorized`](#resp-unauthorized) | `application/problem+json` | [`Problem`](#problem) | — |
+| `500` | [`InternalError`](#resp-internalerror) | `application/problem+json` | [`Problem`](#problem) | — |
+
+<a id="getnetworkperformance"></a>
+### 3.7 `getNetworkPerformance` — `GET /api/v1/performance/networks`
+
+| Item | Value |
+|---|---|
+| Summary | Detail of every network adapter (Performance > Ethernet / Wi-Fi screens). |
+| Tag | `performance` |
+| Auth | `bearerAuth` |
+| Parameters | none |
+| Request body | none |
+| Requirement | [FR-PERF-05](requirements/functional-requirements.md#fr-perf-05) |
+| Design | [LLD-04](design/lld/LLD-04-metrics-collection.md), [LLD-06](design/lld/LLD-06-detail-and-inventory.md), [LLD-07](design/lld/LLD-07-screens.md) |
+
+Responses:
+
+| Status | Description | Content type | Schema | Example |
+|---|---|---|---|---|
+| `200` | Current data. | `application/json` | [`NetworkPerformance`](#networkperformance) | — |
+| `401` | [`Unauthorized`](#resp-unauthorized) | `application/problem+json` | [`Problem`](#problem) | — |
+| `500` | [`InternalError`](#resp-internalerror) | `application/problem+json` | [`Problem`](#problem) | — |
+
+<a id="getgpuperformance"></a>
+### 3.8 `getGpuPerformance` — `GET /api/v1/performance/gpus`
+
+| Item | Value |
+|---|---|
+| Summary | Detail of every graphics adapter (Performance > GPU screens). |
+| Tag | `performance` |
+| Auth | `bearerAuth` |
+| Parameters | none |
+| Request body | none |
+| Requirement | [FR-PERF-06](requirements/functional-requirements.md#fr-perf-06) |
+| Design | [LLD-04](design/lld/LLD-04-metrics-collection.md), [LLD-06](design/lld/LLD-06-detail-and-inventory.md), [LLD-07](design/lld/LLD-07-screens.md) |
+
+Responses:
+
+| Status | Description | Content type | Schema | Example |
+|---|---|---|---|---|
+| `200` | Current data. | `application/json` | [`GpuPerformance`](#gpuperformance) | — |
+| `401` | [`Unauthorized`](#resp-unauthorized) | `application/problem+json` | [`Problem`](#problem) | — |
+| `500` | [`InternalError`](#resp-internalerror) | `application/problem+json` | [`Problem`](#problem) | — |
+
+<a id="getprocesses"></a>
+### 3.9 `getProcesses` — `GET /api/v1/processes`
+
+| Item | Value |
+|---|---|
+| Summary | Every process with CPU share, memory, owner and thread count. |
+| Tag | `processes` |
+| Auth | `bearerAuth` |
+| Parameters | none |
+| Request body | none |
+| Requirement | [FR-PROC-01](requirements/functional-requirements.md#fr-proc-01), [FR-PROC-02](requirements/functional-requirements.md#fr-proc-02) |
+| Design | [LLD-06](design/lld/LLD-06-detail-and-inventory.md), [LLD-07](design/lld/LLD-07-screens.md) |
+
+Responses:
+
+| Status | Description | Content type | Schema | Example |
+|---|---|---|---|---|
+| `200` | Current data. | `application/json` | [`ProcessList`](#processlist) | — |
+| `401` | [`Unauthorized`](#resp-unauthorized) | `application/problem+json` | [`Problem`](#problem) | — |
+| `500` | [`InternalError`](#resp-internalerror) | `application/problem+json` | [`Problem`](#problem) | — |
+
+<a id="getapphistory"></a>
+### 3.10 `getAppHistory` — `GET /api/v1/apps/history`
+
+| Item | Value |
+|---|---|
+| Summary | Resource usage per application name, accumulated since the backend started. |
+| Tag | `processes` |
+| Auth | `bearerAuth` |
+| Parameters | none |
+| Request body | none |
+| Requirement | [FR-HIST-01](requirements/functional-requirements.md#fr-hist-01) |
+| Design | [LLD-06](design/lld/LLD-06-detail-and-inventory.md), [LLD-07](design/lld/LLD-07-screens.md) |
+
+Responses:
+
+| Status | Description | Content type | Schema | Example |
+|---|---|---|---|---|
+| `200` | Current data. | `application/json` | [`AppHistory`](#apphistory) | — |
+| `401` | [`Unauthorized`](#resp-unauthorized) | `application/problem+json` | [`Problem`](#problem) | — |
+| `500` | [`InternalError`](#resp-internalerror) | `application/problem+json` | [`Problem`](#problem) | — |
+
+<a id="getservices"></a>
+### 3.11 `getServices` — `GET /api/v1/services`
+
+| Item | Value |
+|---|---|
+| Summary | Installed services with state and start type. |
+| Tag | `inventory` |
+| Auth | `bearerAuth` |
+| Parameters | none |
+| Request body | none |
+| Requirement | [FR-SVC-01](requirements/functional-requirements.md#fr-svc-01) |
+| Design | [LLD-06](design/lld/LLD-06-detail-and-inventory.md), [LLD-07](design/lld/LLD-07-screens.md) |
+
+Responses:
+
+| Status | Description | Content type | Schema | Example |
+|---|---|---|---|---|
+| `200` | Current data. | `application/json` | [`ServiceList`](#servicelist) | — |
+| `401` | [`Unauthorized`](#resp-unauthorized) | `application/problem+json` | [`Problem`](#problem) | — |
+| `500` | [`InternalError`](#resp-internalerror) | `application/problem+json` | [`Problem`](#problem) | — |
+
+<a id="getstartupitems"></a>
+### 3.12 `getStartupItems` — `GET /api/v1/startup`
+
+| Item | Value |
+|---|---|
+| Summary | Programs started at logon. |
+| Tag | `inventory` |
+| Auth | `bearerAuth` |
+| Parameters | none |
+| Request body | none |
+| Requirement | [FR-START-01](requirements/functional-requirements.md#fr-start-01) |
+| Design | [LLD-06](design/lld/LLD-06-detail-and-inventory.md), [LLD-07](design/lld/LLD-07-screens.md) |
+
+Responses:
+
+| Status | Description | Content type | Schema | Example |
+|---|---|---|---|---|
+| `200` | Current data. | `application/json` | [`StartupList`](#startuplist) | — |
+| `401` | [`Unauthorized`](#resp-unauthorized) | `application/problem+json` | [`Problem`](#problem) | — |
+| `500` | [`InternalError`](#resp-internalerror) | `application/problem+json` | [`Problem`](#problem) | — |
+
+<a id="getusers"></a>
+### 3.13 `getUsers` — `GET /api/v1/users`
+
+| Item | Value |
+|---|---|
+| Summary | Logged-on user sessions and resource usage per user. |
+| Tag | `inventory` |
+| Auth | `bearerAuth` |
+| Parameters | none |
+| Request body | none |
+| Requirement | [FR-USER-01](requirements/functional-requirements.md#fr-user-01) |
+| Design | [LLD-06](design/lld/LLD-06-detail-and-inventory.md), [LLD-07](design/lld/LLD-07-screens.md) |
+
+Responses:
+
+| Status | Description | Content type | Schema | Example |
+|---|---|---|---|---|
+| `200` | Current data. | `application/json` | [`UserList`](#userlist) | — |
+| `401` | [`Unauthorized`](#resp-unauthorized) | `application/problem+json` | [`Problem`](#problem) | — |
+| `500` | [`InternalError`](#resp-internalerror) | `application/problem+json` | [`Problem`](#problem) | — |
+
+<a id="getsamplehello"></a>
+### 3.14 `getSampleHello` — `GET /api/v1/sample/hello`
+
+| Item | Value |
+|---|---|
+| Summary | Return a fixed greeting to prove FE <-> BE communication works. |
+| Tag | `sample` |
+| Auth | `bearerAuth` |
+| Parameters | none |
+| Request body | none |
+| Requirement | [FR-SMP-01](requirements/functional-requirements.md#fr-smp-01) |
+| Design | [LLD-03](design/lld/LLD-03-sample-hello.md) |
+
+Responses:
+
+| Status | Description | Content type | Schema | Example |
+|---|---|---|---|---|
+| `200` | Greeting. | `application/json` | [`SampleHelloResponse`](#samplehelloresponse) | `{"message": "@@Hello world@@"}` |
+| `401` | [`Unauthorized`](#resp-unauthorized) | `application/problem+json` | [`Problem`](#problem) | — |
+| `500` | [`InternalError`](#resp-internalerror) | `application/problem+json` | [`Problem`](#problem) | — |
 
 ## 4. Schemas
 
@@ -327,6 +549,276 @@ Type: `object` — System-wide rates over the last interval; null when the platf
 | `systemCallsPerSecond` | `number` \| `null` | yes | Not available on Linux. |
 | `dpcsPerSecond` | `number` \| `null` | yes | Windows - DPCs queued; Linux - softirqs raised. |
 | `source` | `string` | yes | Where the counters come from, e.g. "PDH \System, \Processor(_Total)" or "/proc/stat". |
+
+<a id="ratehistory"></a>
+### 4.16 `RateHistory`
+
+Type: array of `number` — Raw samples (bytes per second or bits per second, see the field), oldest first, at most 61 items. The frontend scales them to the peak of the window.
+
+<a id="availabilityfields"></a>
+### 4.17 `AvailabilityFields`
+
+Type: `object` — Fields shared by the inventory responses (documentation only, repeated in each response).
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `available` | `boolean` | no | — |
+| `reason` | `string` \| `null` | no | — |
+
+<a id="cpucores"></a>
+### 4.18 `CpuCores`
+
+Type: `object`
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `cores` | array of [`CoreUsage`](#coreusage) | yes | One item per logical processor, in index order. |
+
+<a id="coreusage"></a>
+### 4.19 `CoreUsage`
+
+Type: `object`
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `index` | `integer` | yes | — |
+| `usagePercent` | `number` | yes | — |
+| `history` | [`PercentHistory`](#percenthistory) | yes | — |
+
+<a id="memoryperformance"></a>
+### 4.20 `MemoryPerformance`
+
+Type: `object`
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `totalBytes` | `integer` | yes | — |
+| `usedBytes` | `integer` | yes | total - available. |
+| `availableBytes` | `integer` | yes | — |
+| `cachedBytes` | `integer` \| `null` | yes | Windows - system cache; Linux - Cached + Buffers. |
+| `committedBytes` | `integer` \| `null` | yes | Windows - CommitTotal; Linux - Committed_AS. |
+| `commitLimitBytes` | `integer` \| `null` | yes | Windows - CommitLimit; Linux - CommitLimit. |
+| `usedPercent` | `number` | yes | — |
+| `history` | [`PercentHistory`](#percenthistory) | yes | — |
+| `topProcesses` | array of [`CpuProcess`](#cpuprocess) | yes | Up to 10 processes using the most memory, highest first. |
+
+<a id="diskperformance"></a>
+### 4.21 `DiskPerformance`
+
+Type: `object`
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `disks` | array of [`DiskDetail`](#diskdetail) | yes | — |
+
+<a id="diskdetail"></a>
+### 4.22 `DiskDetail`
+
+Type: `object`
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `id` | `string` | yes | Same id as the matching PerformanceResource. |
+| `name` | `string` | yes | — |
+| `model` | `string` \| `null` | yes | — |
+| `kind` | `string` enum: `ssd`, `hdd`, `unknown` | yes | — |
+| `capacityBytes` | `integer` \| `null` | yes | — |
+| `activePercent` | `number` \| `null` | yes | — |
+| `readBytesPerSecond` | `number` \| `null` | yes | — |
+| `writeBytesPerSecond` | `number` \| `null` | yes | — |
+| `activeHistory` | [`PercentHistory`](#percenthistory) | yes | — |
+| `readHistory` | [`RateHistory`](#ratehistory) | yes | — |
+| `writeHistory` | [`RateHistory`](#ratehistory) | yes | — |
+
+<a id="networkperformance"></a>
+### 4.23 `NetworkPerformance`
+
+Type: `object`
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `adapters` | array of [`NetworkDetail`](#networkdetail) | yes | — |
+
+<a id="networkdetail"></a>
+### 4.24 `NetworkDetail`
+
+Type: `object`
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `id` | `string` | yes | Same id as the matching PerformanceResource. |
+| `name` | `string` | yes | Adapter name as the operating system shows it. |
+| `kind` | `string` enum: `ethernet`, `wifi` | yes | — |
+| `description` | `string` \| `null` | yes | — |
+| `macAddress` | `string` \| `null` | yes | — |
+| `linkSpeedBitsPerSecond` | `number` \| `null` | yes | — |
+| `sendBitsPerSecond` | `number` | yes | — |
+| `receiveBitsPerSecond` | `number` | yes | — |
+| `sendHistory` | [`RateHistory`](#ratehistory) | yes | — |
+| `receiveHistory` | [`RateHistory`](#ratehistory) | yes | — |
+
+<a id="gpuperformance"></a>
+### 4.25 `GpuPerformance`
+
+Type: `object`
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `gpus` | array of [`GpuDetail`](#gpudetail) | yes | — |
+
+<a id="gpudetail"></a>
+### 4.26 `GpuDetail`
+
+Type: `object`
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `id` | `string` | yes | Same id as the matching PerformanceResource. |
+| `name` | `string` | yes | — |
+| `model` | `string` | yes | — |
+| `utilizationPercent` | `number` \| `null` | yes | — |
+| `temperatureCelsius` | `number` \| `null` | yes | — |
+| `memoryTotalBytes` | `integer` \| `null` | yes | — |
+| `memoryUsedBytes` | `integer` \| `null` | yes | Only where the driver reports it (Linux amdgpu). |
+| `history` | [`PercentHistory`](#percenthistory) | yes | — |
+
+<a id="processlist"></a>
+### 4.27 `ProcessList`
+
+Type: `object`
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `processes` | array of [`ProcessEntry`](#processentry) | yes | Highest CPU first. |
+
+<a id="processentry"></a>
+### 4.28 `ProcessEntry`
+
+Type: `object`
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `pid` | `integer` | yes | — |
+| `parentPid` | `integer` | yes | — |
+| `name` | `string` | yes | — |
+| `userName` | `string` \| `null` | yes | Owner; null when the operating system does not let the backend read it. |
+| `cpuPercent` | `number` | yes | Share of the total capacity of all logical processors (0..100). |
+| `cpuTimeSeconds` | `number` | yes | Cumulative user + kernel CPU time. |
+| `memoryBytes` | `integer` | yes | Windows - private working set; Linux - resident set size. |
+| `threadCount` | `integer` \| `null` | yes | — |
+| `status` | `string` \| `null` | yes | Linux only, e.g. Running, Sleeping, Zombie. |
+| `commandLine` | `string` \| `null` | yes | Linux only. |
+| `isSelf` | `boolean` | yes | — |
+
+<a id="apphistory"></a>
+### 4.29 `AppHistory`
+
+Type: `object`
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `since` | `string` (`date-time`) | yes | When the backend started collecting; usage is accumulated from then on, in memory only. |
+| `apps` | array of [`AppUsage`](#appusage) | yes | Highest accumulated CPU time first, at most 200 items. |
+
+<a id="appusage"></a>
+### 4.30 `AppUsage`
+
+Type: `object`
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `name` | `string` | yes | — |
+| `cpuTimeSeconds` | `number` | yes | CPU time used by every instance since the backend started, including instances that already exited. |
+| `peakMemoryBytes` | `integer` | yes | Highest sum over the running instances seen in one sample. |
+| `memoryBytes` | `integer` | yes | Sum over the instances running now. |
+| `runningInstances` | `integer` | yes | — |
+
+<a id="servicelist"></a>
+### 4.31 `ServiceList`
+
+Type: `object`
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `available` | `boolean` | yes | — |
+| `reason` | `string` \| `null` | yes | Why the list is not available (e.g. systemd missing, not implemented). |
+| `services` | array of [`ServiceEntry`](#serviceentry) | yes | — |
+
+<a id="serviceentry"></a>
+### 4.32 `ServiceEntry`
+
+Type: `object`
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `name` | `string` | yes | — |
+| `displayName` | `string` | yes | — |
+| `description` | `string` \| `null` | yes | — |
+| `state` | `string` enum: `running`, `stopped`, `starting`, `stopping`, `paused`, `other` | yes | — |
+| `startType` | `string` enum: `automatic`, `manual`, `disabled`, `static`, `other` | yes | — |
+| `pid` | `integer` \| `null` | yes | Windows only. |
+
+<a id="startuplist"></a>
+### 4.33 `StartupList`
+
+Type: `object`
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `available` | `boolean` | yes | — |
+| `reason` | `string` \| `null` | yes | — |
+| `items` | array of [`StartupEntry`](#startupentry) | yes | — |
+
+<a id="startupentry"></a>
+### 4.34 `StartupEntry`
+
+Type: `object`
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `name` | `string` | yes | — |
+| `command` | `string` | yes | — |
+| `location` | `string` | yes | Registry key or folder the entry comes from. |
+| `scope` | `string` enum: `user`, `allUsers` | yes | — |
+| `enabled` | `boolean` | yes | — |
+
+<a id="userlist"></a>
+### 4.35 `UserList`
+
+Type: `object`
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `available` | `boolean` | yes | Refers to sessions; users is always computed from the process list. |
+| `reason` | `string` \| `null` | yes | — |
+| `sessions` | array of [`UserSession`](#usersession) | yes | — |
+| `users` | array of [`UserUsage`](#userusage) | yes | — |
+
+<a id="usersession"></a>
+### 4.36 `UserSession`
+
+Type: `object`
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `userName` | `string` | yes | — |
+| `sessionId` | `string` \| `null` | yes | — |
+| `sessionName` | `string` | yes | — |
+| `state` | `string` | yes | Active, Connected, Disconnected or Other. |
+| `logonTime` | `string` \| `null` (`date-time`) | yes | — |
+| `host` | `string` \| `null` | yes | Remote host or client name, when the session is remote. |
+
+<a id="userusage"></a>
+### 4.37 `UserUsage`
+
+Type: `object`
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `userName` | `string` | yes | Owner of the processes; (unknown) groups processes whose owner cannot be read. |
+| `processCount` | `integer` | yes | — |
+| `cpuPercent` | `number` | yes | — |
+| `memoryBytes` | `integer` | yes | — |
 
 ## 5. Reusable responses
 

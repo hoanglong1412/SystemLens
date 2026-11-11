@@ -4,7 +4,7 @@
 |---|---|
 | Scope | Components of SystemLens and the overview flows between them |
 | Traces to | [FR-SMP-01](../requirements/functional-requirements.md#fr-smp-01), [FR-SYS-01](../requirements/functional-requirements.md#fr-sys-01), [FR-PERF-01](../requirements/functional-requirements.md#fr-perf-01), [FR-PERF-02](../requirements/functional-requirements.md#fr-perf-02), [NFR-01](../requirements/non-functional-requirements.md#nfr-01), [NFR-02](../requirements/non-functional-requirements.md#nfr-02) |
-| Detailed in | [LLD-01](lld/LLD-01-backend-lifecycle.md), [LLD-02](lld/LLD-02-api-request-pipeline.md), [LLD-03](lld/LLD-03-sample-hello.md), [LLD-04](lld/LLD-04-metrics-collection.md), [LLD-05](lld/LLD-05-live-performance-ui.md) |
+| Detailed in | [LLD-01](lld/LLD-01-backend-lifecycle.md), [LLD-02](lld/LLD-02-api-request-pipeline.md), [LLD-03](lld/LLD-03-sample-hello.md), [LLD-04](lld/LLD-04-metrics-collection.md), [LLD-05](lld/LLD-05-live-performance-ui.md), [LLD-06](lld/LLD-06-detail-and-inventory.md), [LLD-07](lld/LLD-07-screens.md) |
 | API | [api-schema.md](../api-schema.md), rules in [api-convention.md](../api-convention.md) |
 | Index / matrix | [docs/README.md](../README.md#3-traceability-matrix) |
 
@@ -16,6 +16,7 @@
 | [HLD-04](#hld-04) | App end | NFR-02 | LLD-01 |
 | [HLD-05](#hld-05) | Calling one API | NFR-01, NFR-02 | LLD-02 |
 | [HLD-06](#hld-06) | Live metrics: operating system → sampler → API → UI | FR-SYS-01, FR-PERF-01, FR-PERF-02 | LLD-04, LLD-05 |
+| [HLD-07](#hld-07) | Screens and navigation | FR-NAV-01, FR-PERF-03…07, FR-PROC-01/02, FR-HIST-01, FR-SVC-01, FR-START-01, FR-USER-01 | LLD-06, LLD-07 |
 
 ## Overview
 
@@ -439,3 +440,29 @@ flowchart LR
 | 6 | Controllers → `LiveDataLoop` | Three `GET` requests in parallel once per second. |
 | 7 | `LiveDataLoop` → models | Models format numbers into display texts (`ui/format.js`); `—` for `null`. |
 | 8 | Models → views | Views replace only the changing content, so tooltips and focus survive the refresh. |
+
+<a id="hld-07"></a>
+## HLD-07 — Screens and navigation
+
+Traces to [FR-NAV-01](../requirements/functional-requirements.md#fr-nav-01) and the screen requirements
+(FR-PERF-03…07, FR-PROC-01/02, FR-HIST-01, FR-SVC-01, FR-START-01, FR-USER-01).
+Details: [LLD-06](lld/LLD-06-detail-and-inventory.md) (backend), [LLD-07](lld/LLD-07-screens.md) (frontend).
+
+```mermaid
+flowchart LR
+    TAB["Tab bar<br/>appShell"] -- "1 onTabSelect(id)" --> VS["ViewSwitcher<br/>show(id): onHide / onShow"]
+    VS -- "2 start / stop polling" --> PS["Polling screen<br/>LiveDataLoop"]
+    PS -- "3 GET (api modules)" --> API["HTTP API"]
+    API -- "4 snapshot-based" --> COL["MetricsCollector<br/>latest MetricsSnapshot"]
+    API -- "5 on demand" --> INV["Inventory providers<br/>services, startup, sessions"]
+    PS -- "6 data" --> VIEW["Screen view<br/>table screen / Performance panels"]
+```
+
+| # | Interaction |
+|---|---|
+| 1 | A tab click (or Enter / Space) selects a screen; the shell shows the active tab and window title. |
+| 2 | The switcher hides the current screen (its polling stops) and shows the chosen one (polling starts). Hosts persist, so state survives. |
+| 3 | Each screen polls its own endpoints: Performance 1 s; Processes, Details, App history 2 s; Services, Startup, Users 5 s. |
+| 4 | Processes, App history, Users (usage per user), Memory, Disk, Network, GPU and CPU data come from the latest sampler snapshot. |
+| 5 | Services, Startup items and user sessions are read from the platform on each request; a platform that cannot provide them answers `available = false` with a reason. |
+| 6 | Models turn API objects into display data; views replace the changing content only. |

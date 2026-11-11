@@ -1,0 +1,205 @@
+/*
+ * File : dataScreens.css
+ * Brief: Table screens (Processes, Details, App history, Startup, Users, Services): toolbar, filter box,
+ *        banner and the sortable table.
+ */
+.screen {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  padding: 16px 20px 12px;
+}
+
+/* Two tables stacked (Users): each takes the height of its rows, up to a limit. */
+.stack {
+  box-sizing: border-box;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.screen--compact {
+  height: auto;
+  padding-bottom: 4px;
+}
+
+.screen--compact .table-wrap {
+  flex: none;
+  max-height: 252px;
+}
+
+/* ---- Toolbar ---- */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.toolbar__title {
+  margin: 0 8px 0 0;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 28px;
+}
+
+.toolbar__note {
+  margin-left: auto;
+  font-size: 12px;
+  line-height: 15px;
+  color: var(--text-muted);
+}
+
+.toolbar__summary {
+  font-size: 12px;
+  line-height: 15px;
+  color: var(--text-muted);
+}
+
+.toolbar__title:only-child {
+  margin-right: 0;
+}
+
+.search-box,
+.select {
+  box-sizing: border-box;
+  height: 27px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-plot);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 12px;
+  outline: none;
+}
+
+.search-box {
+  width: 300px;
+}
+
+.search-box:focus,
+.select:focus {
+  border-color: var(--accent);
+}
+
+.banner {
+  margin-bottom: 10px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--orange);
+  border-radius: 4px;
+  background: var(--bg-surface);
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--text-muted);
+}
+
+/* ---- Table ---- */
+.table-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-surface);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  height: 28px;
+  padding: 0 10px;
+  background: var(--bg-raised);
+  color: var(--text-muted);
+  font-weight: 400;
+  text-align: left;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.table td {
+  height: 26px;
+  padding: 0 10px;
+  overflow: hidden;
+  border-top: 1px solid var(--grid);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.table th.table__cell--right,
+.table td.table__cell--right {
+  text-align: right;
+}
+
+.table__head--sortable {
+  cursor: pointer;
+}
+
+.table__head--sortable:hover,
+.table__head--active {
+  color: var(--text);
+}
+
+.table__sort {
+  display: inline-block;
+  margin-left: 4px;
+  font-size: 9px;
+}
+
+.table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.table tbody tr.is-selected {
+  background: var(--bg-selected);
+}
+
+.table__empty td {
+  padding: 18px;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.table__cell--ellipsis {
+  color: var(--text-muted);
+}
+
+.row--self td {
+  color: var(--accent);
+}
+
+.row--disabled td {
+  color: var(--text-muted);
+}
+
+.service--running td:nth-child(3) {
+  color: var(--green);
+}
+
+/* ---- Grouped process names ---- */
+.process__name {
+  display: inline-flex;
+  align-items: center;
+}
+
+.process__name--depth1 {
+  padding-left: 20px;
+}
+
+.process__caret {
+  display: inline-block;
+  flex: none;
+  width: 14px;
+  color: var(--text-muted);
+}

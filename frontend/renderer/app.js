@@ -1,116 +1,146 @@
 /**
  * @file   app.js
- * @brief  Renderer entry point: builds the app shell, registers the screens (sample greeting by
- *         default, Performance > CPU), connects to the backend and keeps the shell and the CPU
- *         screen refreshed with live data.
+ * @brief  Renderer entry point: builds the app shell, registers one screen per tab (plus the sample hello
+ *         screen behind a toggle button), connects to the backend and keeps the shell refreshed.
+ *         Each screen refreshes itself while it is visible (see live/pollingScreen.js).
  */
 import { ApiClient } from './api/apiClient.js';
-import { getCpuPerformance, getPerformanceResources } from './api/performance/performanceApi.js';
 import { getSampleHello } from './api/sample/sampleHelloApi.js';
 import { getSystemOverview } from './api/system/systemApi.js';
 import { LiveDataLoop } from './live/liveDataLoop.js';
 import { createAppShell } from './shell/appShell.js';
 import { toShellData } from './shell/shellModel.js';
+import { h } from './ui/dom.js';
 import { ViewSwitcher } from './views/viewSwitcher.js';
-import { renderHelloView } from './views/hello/helloView.js';
-import { toCpuViewData } from './views/cpu/cpuPerformanceModel.js';
-import { createCpuPerformanceView } from './views/cpu/cpuPerformanceView.js';
+import { createHelloView } from './views/hello/helloView.js';
+import { createPerformanceScreen } from './views/performance/performanceScreen.js';
+import { createProcessesScreen } from './views/processes/processesScreen.js';
+import { createDetailsScreen } from './views/processes/detailsScreen.js';
+import { createAppHistoryScreen } from './views/history/appHistoryScreen.js';
+import { createServicesScreen } from './views/inventory/servicesScreen.js';
+import { createStartupScreen } from './views/inventory/startupScreen.js';
+import { createUsersScreen } from './views/inventory/usersScreen.js';
 
-/** Pause between two refreshes; matches the backend sample interval ("Normal (1 s)"). */
-const REFRESH_INTERVAL_MS = 1000;
-
-/**
- * Show a text in the hello screen.
- * @param {string} text Text to display.
- * @param {boolean} [isError=false] Style the text as an error.
- */
-function render(text, isError = false) {
-  const element = document.getElementById('message');
-  element.textContent = text;
-  element.classList.toggle('error', isError);
-}
+/** Pause between two refreshes of the shell; matches the backend sample interval ("Normal (1 s)"). */
+const SHELL_REFRESH_INTERVAL_MS = 1000;
+/** Tab shown when the application starts. */
+const DEFAULT_TAB_ID = 'performance';
+const HELLO_VIEW_ID = 'hello';
+const HELLO_TOGGLE_TEXT = '⇄ Hello';
+const HELLO_BACK_TEXT = '⇄ Back';
 
 /**
  * Build the shell and register the screens. Everything shows "no value" until data arrives.
- * @returns {{showOverview: (overview: object|null, connected: boolean) => void,
- *            showCpu: (resources: object[]|null, cpu: object|null) => void}}
- *          Functions that push new API data into the shell and the CPU screen.
+ * @param {() => Promise<ApiClient>} getClient Resolves once the backend connection is known.
+ * @param {ReturnType<typeof createHelloView>} hello The sample greeting screen.
+ * @returns {{showOverview: (overview: object) => void, showDisconnected: () => void}}
+ *          Functions that push the result of a shell refresh into the UI.
  */
-function mountUi() {
-  const shell = createAppShell(document.getElementById('app'), toShellData(null, false));
+function mountUi(getClient, hello) {
+  let activeTabId = DEFAULT_TAB_ID;
+  let overview = null;
+  let connected = false;
 
-  // The CPU screen is created lazily (first time it is shown), so the latest data is kept
-  // here and handed over when the screen appears.
-  let cpuView = null;
-  let cpuData = toCpuViewData(null, null);
+  /** Redraw the shell with the current overview, connection state and active tab. */
+  const refreshShell = () => shell.update(toShellData(overview, connected, activeTabId));
+
+  const shell = createAppShell(document.getElementById('app'), toShellData(null, false, activeTabId), {
+    onTabSelect: (tabId) => {
+      activeTabId = tabId;
+      switcher.show(tabId);
+      refreshShell();
+      toggle.textContent = HELLO_TOGGLE_TEXT;
+    },
+  });
 
   const switcher = new ViewSwitcher(shell.content, [
-    { id: 'hello', label: 'Hello', render: (host) => renderHelloView(host, 'Connecting to backend...') },
-    { id: 'cpu', label: 'CPU performance', render: (host) => { cpuView = createCpuPerformanceView(host, cpuData); } },
+    { id: HELLO_VIEW_ID, render: hello.render },
+    { id: 'processes', ...createProcessesScreen({ getClient }) },
+    { id: 'performance', ...createPerformanceScreen({ getClient }) },
+    { id: 'history', ...createAppHistoryScreen({ getClient }) },
+    { id: 'startup', ...createStartupScreen({ getClient }) },
+    { id: 'users', ...createUsersScreen({ getClient }) },
+    { id: 'details', ...createDetailsScreen({ getClient }) },
+    { id: 'services', ...createServicesScreen({ getClient }) },
   ]);
-  shell.actions.append(switcher.button);
-  switcher.show('hello');
+
+  // Temporary button (not in the design): switches between the active tab and the sample greeting.
+  const toggle = h('button', {
+    class: 'btn btn--small view-toggle',
+    type: 'button',
+    text: HELLO_TOGGLE_TEXT,
+    on: {
+      click: () => {
+        const onHello = switcher.currentId === HELLO_VIEW_ID;
+        switcher.show(onHello ? activeTabId : HELLO_VIEW_ID);
+        toggle.textContent = onHello ? HELLO_TOGGLE_TEXT : HELLO_BACK_TEXT;
+      },
+    },
+  });
+  shell.actions.append(toggle);
+  switcher.show(activeTabId);
 
   return {
-    showOverview: (overview, connected) => shell.update(toShellData(overview, connected)),
-    showCpu: (resources, cpu) => {
-      cpuData = toCpuViewData(resources, cpu);
-      cpuView?.update(cpuData);
+    showOverview: (next) => {
+      overview = next;
+      connected = true;
+      refreshShell();
+    },
+    showDisconnected: () => {
+      // The last values stay on screen; only the connection state changes.
+      connected = false;
+      refreshShell();
     },
   };
 }
 
 /**
- * Start refreshing the shell and the CPU screen from the backend.
- * On a failed refresh the last values stay on screen and the status bar reports the disconnection;
- * the loop keeps retrying.
+ * Start refreshing the shell (header, quick stats, tabs, status bar) from the backend.
  * @param {ApiClient} client Configured API client.
  * @param {ReturnType<typeof mountUi>} ui Functions returned by mountUi.
  */
-function startLiveData(client, ui) {
-  let lastOverview = null;
-  const loop = new LiveDataLoop({
-    intervalMs: REFRESH_INTERVAL_MS,
-    load: async () => {
-      const [overview, resources, cpu] = await Promise.all([
-        getSystemOverview(client),
-        getPerformanceResources(client),
-        getCpuPerformance(client),
-      ]);
-      return { overview, resources, cpu };
-    },
-    onData: ({ overview, resources, cpu }) => {
-      lastOverview = overview;
-      ui.showOverview(overview, true);
-      ui.showCpu(resources, cpu);
-    },
+function startShellRefresh(client, ui) {
+  new LiveDataLoop({
+    intervalMs: SHELL_REFRESH_INTERVAL_MS,
+    load: () => getSystemOverview(client),
+    onData: ui.showOverview,
     onError: (error) => {
       console.error(error);
-      ui.showOverview(lastOverview, false);
+      ui.showDisconnected();
     },
-  });
-  loop.start();
+  }).start();
 }
 
-/** Mount the UI, load the backend config, show the greeting and start the live data refresh. */
+/** Mount the UI, load the backend config, show the greeting and start the shell refresh. */
 async function bootstrap() {
-  const ui = mountUi();
+  const hello = createHelloView('Connecting to backend...');
+  let resolveClient;
+  let rejectClient;
+  const clientReady = new Promise((resolve, reject) => {
+    resolveClient = resolve;
+    rejectClient = reject;
+  });
+  // The screens await this promise; a failure is reported in the hello screen, not as an unhandled rejection.
+  clientReady.catch(() => {});
+
+  const ui = mountUi(() => clientReady, hello);
   let client;
   try {
-    const config = await window.systemlens.getBackendConfig();
-    client = new ApiClient(config);
+    client = new ApiClient(await window.systemlens.getBackendConfig());
+    resolveClient(client);
   } catch (err) {
     console.error(err);
-    render(`Cannot reach backend: ${err.message}`, true);
+    rejectClient(err);
+    hello.setMessage(`Cannot reach backend: ${err.message}`, true);
     return;
   }
 
-  startLiveData(client, ui);
+  startShellRefresh(client, ui);
   try {
-    render(await getSampleHello(client));
+    hello.setMessage(await getSampleHello(client));
   } catch (err) {
     console.error(err);
-    render(`Cannot reach backend: ${err.message}`, true);
+    hello.setMessage(`Cannot reach backend: ${err.message}`, true);
   }
 }
 

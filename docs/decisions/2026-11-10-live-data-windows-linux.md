@@ -127,6 +127,11 @@ User yêu cầu: "tự thiết kế và code tiếp cho tất cả màn hình c�
 | D-57 | Sắp xếp và lọc làm ở frontend; backend trả nguyên danh sách. | Đơn giản, danh sách chỉ vài trăm dòng. |
 | D-58 | Biểu đồ đọc/ghi của Disk và gửi/nhận của Network gửi **số thô** theo đơn vị thật (bytes/s, bit/s); frontend tự co giãn theo đỉnh trong 60 s. | Đúng D-14 và D-23. |
 | D-59 | Không thêm tooling; Windows vẫn chỉ biên dịch chéo bằng MinGW-w64 (D-38/D-39). | Như pha 1. |
+| D-60 | Màn hình mặc định khi mở app là tab **Performance** (không còn là màn hình Hello); Hello vẫn truy cập được bằng nút tạm `⇄ Hello` (đổi thành `⇄ Back` khi đang ở Hello). | Có thanh tab thật thì tab active và màn hình hiển thị phải khớp nhau. Sửa lại D-03. |
+| D-61 | Bấm cột số (căn phải) lần đầu → sắp xếp giảm dần; bấm lại → đảo chiều. Cột chữ: tăng dần trước. | Người dùng thường muốn xem giá trị lớn nhất trước. |
+| D-62 | Sidebar Performance bấm được: chọn resource → đổi panel ngay và tải dữ liệu của resource đó ngay (không chờ timer); chỉ tải dữ liệu của resource đang chọn cùng danh sách sidebar. | Giảm tải backend / JSON; phản hồi tức thì. |
+| D-63 | Biểu đồ của panel mới (Memory / Disk / Network / GPU / Per-core) co giãn theo chiều rộng của vùng chứa (plot "fluid", nét vẽ giữ độ dày); các card của CPU Overview vẫn kích thước cố định theo Figma. | Panel mới không có thiết kế Figma; layout linh hoạt hơn. |
+| D-64 | Không có thiết kế Figma cho các màn hình mới: AI tự thiết kế theo token màu, card, bảng và font hiện có (xem ảnh trong `evi/`). | Không đọc được Figma ở pha này (không cần: giữ phong cách có sẵn). |
 
 ## 8. Việc để lại
 

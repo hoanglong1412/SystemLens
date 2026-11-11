@@ -256,3 +256,19 @@
 .slot {
   display: contents;
 }
+
+/* ---- Fluid plot: width follows the container, strokes keep their thickness ---- */
+.plot--fluid {
+  width: 100%;
+}
+
+.plot--fluid .plot__line,
+.plot--fluid .plot__grid,
+.plot--fluid .plot__border {
+  vector-effect: non-scaling-stroke;
+}
+
+/* ---- Visibility helper ---- */
+.is-hidden {
+  display: none !important;
+}

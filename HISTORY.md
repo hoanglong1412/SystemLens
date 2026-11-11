@@ -19,6 +19,34 @@ Mẫu entry:
 - AI: đề xuất / kết quả / vấn đề phát hiện
 -->
 
+## 2026-11-11 — Frontend cho các màn hình còn lại: tab, panel Performance, bảng dữ liệu
+
+**Lý do:** Hoàn thành yêu cầu "tự thiết kế và code tiếp cho tất cả màn hình còn lại" (nối tiếp commit backend ngay trước).
+
+**Nội dung:**
+- Thanh tab bấm được (Processes, Performance, App history, Startup, Users, Details, Services); mỗi màn hình chỉ poll
+  backend khi đang hiển thị (`live/pollingScreen.js`, `ViewSwitcher.show` gọi `onShow` / `onHide`); mặc định mở tab Performance.
+- Performance: sidebar bấm được; panel Memory, Disk, Ethernet / Wi-Fi, GPU dùng chung `resourceDetailView.js` (model riêng
+  mỗi loại); CPU có sub-tab "Per-core" hoạt động. Plot có tuỳ chọn `fluid` (co giãn theo chiều rộng).
+- Bảng: `ui/dataTable.js` + `ui/tableScreen.js` (sắp xếp theo cột, lọc theo chữ, lọc theo trạng thái, banner "không hỗ trợ"):
+  Processes (gom nhóm theo tên, bung / thu), Details, App history, Services, Startup, Users.
+- `ui/format.js`: `formatBytes`, `formatByteRate`, `formatCpuTime`; `ui/series.js`; `LiveDataLoop.refresh()`.
+- Backend: sửa tên process Linux bị kéo dài cả command line (Chrome ghi đè argv); sửa lỗi dangling `string_view` trong
+  `LinuxServiceProvider` (phát hiện khi test bằng `systemctl` giả).
+- Tài liệu: FR-NAV-01, FR-PERF-03…07, FR-PROC-01/02, FR-HIST-01, FR-SVC-01, FR-START-01, FR-USER-01; HLD-07; LLD-05 (viết lại),
+  LLD-07 (mới), cập nhật LLD-03, `docs/README.md`, `api-schema.md` (sinh lại từ YAML), decisions D-60…D-64.
+- `evi/app_linux_*.png`: 5 ảnh màn hình mới (Memory, Disk, CPU per-core, Users, Services với `systemctl` giả).
+
+**Kiểm chứng:** Linux — renderer chạy trong Chromium headless với backend thật: duyệt tất cả tab và panel, sắp xếp, lọc, bung
+nhóm, nút Hello, không có lỗi console; Services / Startup test bằng `systemctl` giả và file autostart giả. Chưa chạy qua
+Electron, chưa chạy trên Windows (backend chỉ biên dịch chéo bằng MinGW-w64).
+
+**Trao đổi user ↔ AI:**
+- User: tự thiết kế và code tiếp cho tất cả màn hình còn lại.
+- AI: không có thiết kế Figma cho các màn hình này nên tự thiết kế theo token / card / bảng hiện có; mặc định mở tab
+  Performance (sửa D-03), Hello còn nút toggle.
+- AI: không chụp ảnh tab Processes / Details vào `evi/` vì cột command line có thể chứa thông tin phiên làm việc của container.
+
 ## 2026-11-11 — Backend cho các màn hình còn lại: provider mới, 10 endpoint, lịch sử ứng dụng
 
 **Lý do:** User yêu cầu "tự thiết kế và code tiếp cho tất cả màn hình còn lại" (Processes, App history, Startup,

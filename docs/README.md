@@ -24,7 +24,9 @@ docs/
 │       ├── LLD-02-api-request-pipeline.md one API call from ApiClient to the controller and back
 │       ├── LLD-03-sample-hello.md         sample feature: show the greeting from GET /api/v1/sample/hello
 │       ├── LLD-04-metrics-collection.md   backend: platform providers, sampler, system / performance APIs
-│       └── LLD-05-live-performance-ui.md  frontend: live app shell and Performance › CPU screen
+│       ├── LLD-05-live-performance-ui.md  frontend: live app shell
+│       ├── LLD-06-detail-and-inventory.md backend: resource details, process list, services / startup / users
+│       └── LLD-07-screens.md              frontend: tab navigation, Performance panels, table screens
 ├── decisions/                             design decisions taken by the AI on the owner's behalf, with reasons
 └── ui-design/                             link to the Figma design
 ```
@@ -55,6 +57,12 @@ Areas currently in use:
 | `SMP` | Sample API / sample feature (exists only to prove FE ↔ BE communication) |
 | `SYS` | Machine-wide information shown by the app shell |
 | `PERF` | Performance tab |
+| `NAV` | Navigation between screens |
+| `PROC` | Processes and Details tabs |
+| `HIST` | App history tab |
+| `SVC` | Services tab |
+| `START` | Startup tab |
+| `USER` | Users tab |
 
 Rules:
 - An ID is never reused or renumbered; a removed item keeps its ID with status `Removed`.
@@ -68,6 +76,10 @@ Rules:
 | [FR-SMP-01](requirements/functional-requirements.md#fr-smp-01) / [UC-SMP-01](requirements/functional-requirements.md#uc-smp-01) | [HLD-02](design/high-level-design.md#hld-02) | [LLD-03](design/lld/LLD-03-sample-hello.md) | [`getSampleHello`](api-schema.md#getsamplehello) | `frontend/renderer/app.js`, `frontend/renderer/api/sample/sampleHelloApi.js`, `backend/src/api/sample/*`, `backend/src/services/sample/*` |
 | [FR-SYS-01](requirements/functional-requirements.md#fr-sys-01) / [UC-SYS-01](requirements/functional-requirements.md#uc-sys-01) | [HLD-06](design/high-level-design.md#hld-06) | [LLD-04](design/lld/LLD-04-metrics-collection.md), [LLD-05](design/lld/LLD-05-live-performance-ui.md) | [`getSystemOverview`](api-schema.md#getsystemoverview) | `frontend/renderer/shell/*`, `frontend/renderer/api/system/systemApi.js`, `frontend/renderer/live/liveDataLoop.js`, `backend/src/api/system/*`, `backend/src/services/system/*`, `backend/src/services/monitoring/*`, `backend/src/providers/*` |
 | [FR-PERF-01](requirements/functional-requirements.md#fr-perf-01), [FR-PERF-02](requirements/functional-requirements.md#fr-perf-02) / [UC-PERF-01](requirements/functional-requirements.md#uc-perf-01) | [HLD-06](design/high-level-design.md#hld-06) | [LLD-04](design/lld/LLD-04-metrics-collection.md), [LLD-05](design/lld/LLD-05-live-performance-ui.md) | [`getPerformanceResources`](api-schema.md#getperformanceresources), [`getCpuPerformance`](api-schema.md#getcpuperformance) | `frontend/renderer/views/cpu/*`, `frontend/renderer/api/performance/performanceApi.js`, `frontend/renderer/ui/*`, `backend/src/api/performance/*`, `backend/src/services/performance/*`, `backend/src/services/monitoring/*`, `backend/src/providers/*` |
+| [FR-NAV-01](requirements/functional-requirements.md#fr-nav-01) / [UC-NAV-01](requirements/functional-requirements.md#uc-nav-01) | [HLD-07](design/high-level-design.md#hld-07) | [LLD-07](design/lld/LLD-07-screens.md) | — | `frontend/renderer/app.js`, `frontend/renderer/shell/appShell.js`, `frontend/renderer/views/viewSwitcher.js`, `frontend/renderer/live/pollingScreen.js` |
+| [FR-PERF-03](requirements/functional-requirements.md#fr-perf-03)…[FR-PERF-07](requirements/functional-requirements.md#fr-perf-07) / [UC-PERF-02](requirements/functional-requirements.md#uc-perf-02) | [HLD-07](design/high-level-design.md#hld-07) | [LLD-06](design/lld/LLD-06-detail-and-inventory.md), [LLD-07](design/lld/LLD-07-screens.md) | [`getMemoryPerformance`](api-schema.md#getmemoryperformance), [`getDiskPerformance`](api-schema.md#getdiskperformance), [`getNetworkPerformance`](api-schema.md#getnetworkperformance), [`getGpuPerformance`](api-schema.md#getgpuperformance), [`getCpuCores`](api-schema.md#getcpucores) | `frontend/renderer/views/performance/*`, `frontend/renderer/views/cpu/*`, `backend/src/api/performance/PerformanceDetailController.*`, `backend/src/services/performance/PerformanceDetailService.*` |
+| [FR-PROC-01](requirements/functional-requirements.md#fr-proc-01), [FR-PROC-02](requirements/functional-requirements.md#fr-proc-02), [FR-HIST-01](requirements/functional-requirements.md#fr-hist-01) / [UC-PROC-01](requirements/functional-requirements.md#uc-proc-01) | [HLD-07](design/high-level-design.md#hld-07) | [LLD-06](design/lld/LLD-06-detail-and-inventory.md), [LLD-07](design/lld/LLD-07-screens.md) | [`getProcesses`](api-schema.md#getprocesses), [`getAppHistory`](api-schema.md#getapphistory) | `frontend/renderer/views/processes/*`, `frontend/renderer/views/history/*`, `frontend/renderer/ui/tableScreen.js`, `backend/src/api/processes/*`, `backend/src/services/processes/*`, `backend/src/services/monitoring/MetricsCollector.*` |
+| [FR-SVC-01](requirements/functional-requirements.md#fr-svc-01), [FR-START-01](requirements/functional-requirements.md#fr-start-01), [FR-USER-01](requirements/functional-requirements.md#fr-user-01) / [UC-INV-01](requirements/functional-requirements.md#uc-inv-01) | [HLD-07](design/high-level-design.md#hld-07) | [LLD-06](design/lld/LLD-06-detail-and-inventory.md), [LLD-07](design/lld/LLD-07-screens.md) | [`getServices`](api-schema.md#getservices), [`getStartupItems`](api-schema.md#getstartupitems), [`getUsers`](api-schema.md#getusers) | `frontend/renderer/views/inventory/*`, `backend/src/api/inventory/*`, `backend/src/services/inventory/*`, `backend/src/providers/*/…Service|Startup|UserSession*` |
 | [NFR-01](requirements/non-functional-requirements.md#nfr-01) | [HLD-01](design/high-level-design.md#hld-01), [HLD-05](design/high-level-design.md#hld-05) | [LLD-02](design/lld/LLD-02-api-request-pipeline.md) | all | `api/openapi.yaml` |
 | [NFR-02](requirements/non-functional-requirements.md#nfr-02) | [HLD-01](design/high-level-design.md#hld-01), [HLD-03](design/high-level-design.md#hld-03), [HLD-05](design/high-level-design.md#hld-05) | [LLD-01](design/lld/LLD-01-backend-lifecycle.md), [LLD-02](design/lld/LLD-02-api-request-pipeline.md) | all | `frontend/renderer/api/apiClient.js`, `frontend/main/ipcChannels.js`, `frontend/preload/preload.js`, `backend/src/api/HttpTypes.h`, `backend/src/api/IRouteRegistry.h`, `backend/src/api/HttpServer.*` |
 | [NFR-03](requirements/non-functional-requirements.md#nfr-03) | — (not implemented) | — | — | — |

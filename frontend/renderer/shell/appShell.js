@@ -14,14 +14,21 @@ import { appLogoIcon, monitorIcon, sunIcon, windowControlIcon } from '../ui/icon
  * Title bar: app logo, window title and (decorative) window controls.
  * The real controls come from the native title bar overlay (see main.js); these glyphs sit under it.
  * @param {string} title Window title.
- * @returns {HTMLElement}
+ * @returns {{element: HTMLElement, update: (data: object) => void}}
  */
 function titleBar(title) {
-  return h('div', { class: 'titlebar' }, [
+  const text = h('span', { class: 'titlebar__title', text: title });
+  const element = h('div', { class: 'titlebar' }, [
     appLogoIcon(),
-    h('span', { class: 'titlebar__title', text: title }),
+    text,
     h('div', { class: 'titlebar__controls' }, ['minimize', 'maximize', 'close'].map(windowControlIcon)),
   ]);
+  return {
+    element,
+    update({ windowTitle }) {
+      text.textContent = windowTitle;
+    },
+  };
 }
 
 /**
@@ -89,13 +96,29 @@ function header(tooltips) {
 
 /**
  * Tab bar with the screen tabs and the right-side actions.
+ * The tab elements are created once; update() only changes their captions and the active one.
  * @param {HTMLElement} actions Container for extra action buttons (filled by the caller).
+ * @param {Array<{id: string}>} initialTabs Tabs to create.
+ * @param {(tabId: string) => void} onTabSelect Called when a tab is clicked or activated with the keyboard.
  * @returns {{element: HTMLElement, update: (data: object) => void}}
  */
-function tabBar(actions) {
-  const tabs = h('div', { class: 'tabbar__tabs' });
+function tabBar(actions, initialTabs, onTabSelect) {
+  const tabs = new Map(initialTabs.map(({ id }) => [id, h('div', {
+    class: 'tab',
+    role: 'tab',
+    tabindex: 0,
+    on: {
+      click: () => onTabSelect(id),
+      keydown: (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onTabSelect(id);
+        }
+      },
+    },
+  })]));
   const element = h('div', { class: 'tabbar' }, [
-    tabs,
+    h('div', { class: 'tabbar__tabs', role: 'tablist' }, [...tabs.values()]),
     actions,
     h('button', { class: 'btn btn--small tabbar__export', type: 'button', text: 'Export snapshot' }),
     h('button', { class: 'btn btn--icon', type: 'button', 'aria-label': 'Toggle theme' }, [sunIcon()]),
@@ -103,8 +126,12 @@ function tabBar(actions) {
   return {
     element,
     update(data) {
-      tabs.replaceChildren(...data.tabs.map((name) =>
-        h('div', { class: name.startsWith(data.activeTab) ? 'tab tab--active' : 'tab', text: name })));
+      for (const { id, caption, active } of data.tabs) {
+        const tab = tabs.get(id);
+        tab.textContent = caption;
+        tab.classList.toggle('tab--active', active);
+        tab.setAttribute('aria-selected', String(active));
+      }
     },
   };
 }
@@ -139,17 +166,21 @@ function statusBar(data) {
  * Build the app shell inside a container.
  * @param {HTMLElement} container Element that receives the shell (emptied first).
  * @param {object} data Shell display data (see shellModel.js, toShellData).
+ * @param {object} options
+ * @param {(tabId: string) => void} options.onTabSelect Called when the user picks a tab.
  * @returns {{content: HTMLElement, actions: HTMLElement, update: (data: object) => void}}
  *          content: slot for the current screen; actions: slot in the tab bar for extra buttons;
  *          update: show new shell data.
  */
-export function createAppShell(container, data) {
+export function createAppShell(container, data, { onTabSelect }) {
   const content = h('main', { class: 'shell__content' });
   const actions = h('div', { class: 'tabbar__actions' });
-  const parts = [header(data.tooltips), tabBar(actions), statusBar(data)];
-  const [headerPart, tabBarPart, statusBarPart] = parts;
+  const titleBarPart = titleBar(data.windowTitle);
+  const headerPart = header(data.tooltips);
+  const tabBarPart = tabBar(actions, data.tabs, onTabSelect);
+  const statusBarPart = statusBar(data);
   container.replaceChildren(
-    titleBar(data.windowTitle),
+    titleBarPart.element,
     headerPart.element,
     tabBarPart.element,
     content,
@@ -157,6 +188,7 @@ export function createAppShell(container, data) {
   );
   container.classList.add('shell');
 
+  const parts = [titleBarPart, headerPart, tabBarPart, statusBarPart];
   const update = (next) => parts.forEach((part) => part.update(next));
   update(data);
   return { content, actions, update };

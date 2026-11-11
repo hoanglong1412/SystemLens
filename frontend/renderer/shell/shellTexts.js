@@ -5,18 +5,18 @@
 import { Placement } from '../ui/tooltip.js';
 
 export const SHELL_TEXTS = Object.freeze({
-  windowTitle: 'SystemLens — Performance',
+  /** Window title prefix; the active tab name follows. */
+  windowTitle: 'SystemLens',
   /** Tabs in display order. count: key of the live count shown in parentheses, when there is one. */
   tabs: [
-    { name: 'Processes', count: 'processCount' },
-    { name: 'Performance' },
-    { name: 'App history' },
-    { name: 'Startup' },
-    { name: 'Users' },
-    { name: 'Details' },
-    { name: 'Services', count: 'serviceCount' },
+    { id: 'processes', name: 'Processes', count: 'processCount' },
+    { id: 'performance', name: 'Performance' },
+    { id: 'history', name: 'App history' },
+    { id: 'startup', name: 'Startup' },
+    { id: 'users', name: 'Users' },
+    { id: 'details', name: 'Details' },
+    { id: 'services', name: 'Services', count: 'serviceCount' },
   ],
-  activeTab: 'Performance',
   status: {
     connected: 'Connected to backend',
     disconnected: 'Disconnected from backend',

@@ -130,8 +130,10 @@ std::vector<SystemServiceInfo> LinuxServiceProvider::readServices() const
         throw ProviderError("systemd is not available (systemctl returned no units)");
     }
 
+    // Kept in a variable: splitLines() returns views into it, which must outlive the loop.
+    const std::string unitFiles = runCommand(kListUnitFilesCommand);
     std::map<std::string, ServiceStartType> startTypes;
-    for (const std::string_view line : procfs::splitLines(runCommand(kListUnitFilesCommand)))
+    for (const std::string_view line : procfs::splitLines(unitFiles))
     {
         const auto columns = procfs::splitWhitespace(line);
         if (columns.size() > kUnitFileStateColumn)

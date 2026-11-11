@@ -1,7 +1,8 @@
 /**
  * @file   cpuPerformanceView.js
- * @brief  Performance > CPU screen: resource sidebar and the CPU detail panel (gauges, utilization
- *         chart, top processes, summary, specifications, CPU time breakdown, scheduler activity).
+ * @brief  Performance > CPU panel: gauges, utilization chart, top processes, summary, specifications,
+ *         CPU time breakdown and scheduler activity (sub-tab "Overview"), or one card per logical
+ *         processor (sub-tab "Per-core"). The resource sidebar lives in views/performance.
  *
  * The cards are built once; update() replaces only the content that changes (texts, plots, table
  * rows), so the info icons and their open tooltips survive the once-per-second refresh.
@@ -14,9 +15,10 @@ import { ledGauge } from '../../ui/charts/ledGauge.js';
 import { CPU_TEXTS } from './cpuPerformanceTexts.js';
 
 /** Plot sizes from the design (outer size, border included). */
-const SPARKLINE = { width: 72, height: 52, inset: 1 };
 const UTILIZATION_PLOT = { width: 588, height: 228, grid: { columns: 20, rows: 10 } };
 const TREND_PLOT = { width: 584, height: 52, grid: { columns: 20, rows: 0 } };
+/** Drawing size of one per-core plot; it stretches to the card width. */
+const CORE_PLOT = { width: 240, height: 56, grid: { columns: 12, rows: 4 }, fluid: true };
 
 /**
  * Card container with the common border/background.
@@ -45,52 +47,30 @@ function cardTitle(title, tip, extraClass = '') {
  */
 
 /**
- * Sidebar: one row per monitored resource with its sparkline.
- * @returns {Part}
- */
-function resourceSidebar() {
-  const rows = h('div', { class: 'slot' });
-  const element = h('aside', { class: 'resources' }, [
-    infoIcon(CPU_TEXTS.tooltips.resources, 'resources__info'),
-    rows,
-  ]);
-  return {
-    element,
-    update(data) {
-      rows.replaceChildren(...data.resources.map((res) => {
-        const spark = plot({ ...SPARKLINE, series: [{ values: res.series, color: res.color, fill: res.fill }], className: 'sparkline' });
-        spark.style.color = res.color;
-        return h('div', { class: res.selected ? 'resource resource--selected' : 'resource' }, [
-          spark,
-          h('div', { class: 'resource__text' }, [
-            h('div', { class: 'resource__name', text: res.name }),
-            h('div', { class: 'resource__detail' }, dotted(res.detail)),
-          ]),
-        ]);
-      }));
-    },
-  };
-}
-
-/**
  * CPU title, model, topology and Overview / Per-core sub-tabs.
- * @returns {Part}
+ * @param {(name: string) => void} onSubTabChange Called when a sub-tab is clicked.
+ * @returns {Part & {setActiveSubTab: (name: string) => void}}
  */
-function cpuHeader() {
+function cpuHeader(onSubTabChange) {
   const model = h('div', { class: 'cpu-header__model' });
   const topology = h('div', { class: 'cpu-header__topology' });
+  const buttons = CPU_TEXTS.subTabs.map((name) => h('button', {
+    type: 'button', class: 'subtab', text: name, on: { click: () => onSubTabChange(name) },
+  }));
   const element = h('div', { class: 'cpu-header' }, [
     h('h1', { class: 'cpu-header__title', text: CPU_TEXTS.title }),
     model,
     topology,
-    h('div', { class: 'subtabs' }, CPU_TEXTS.subTabs.map((name) =>
-      h('button', { type: 'button', class: name === CPU_TEXTS.activeSubTab ? 'subtab subtab--active' : 'subtab', text: name }))),
+    h('div', { class: 'subtabs', role: 'tablist' }, buttons),
   ]);
   return {
     element,
     update({ header }) {
       model.textContent = header.model;
       topology.replaceChildren(...dotted(header.topology));
+    },
+    setActiveSubTab(name) {
+      buttons.forEach((button) => button.classList.toggle('subtab--active', button.textContent === name));
     },
   };
 }
@@ -314,31 +294,59 @@ function schedulerCard() {
 }
 
 /**
- * Build the CPU performance screen.
- * @param {HTMLElement} container Shell content slot (emptied first).
- * @param {object} data Initial display data (see cpuPerformanceModel.js, toCpuViewData).
- * @returns {{update: (data: object) => void}} update: show new display data.
+ * Per-core grid: one card per logical processor with its current usage and 60-second plot.
+ * @returns {Part}
  */
-export function createCpuPerformanceView(container, data) {
-  const sidebar = resourceSidebar();
-  const header = cpuHeader();
+function coresGrid() {
+  const element = h('div', { class: 'cores' });
+  return {
+    element,
+    update({ cores }) {
+      element.replaceChildren(...cores.map((core) => h('div', { class: 'card core' }, [
+        h('div', { class: 'core__head' }, [
+          h('span', { class: 'core__label', text: core.label }),
+          h('span', { class: 'core__value', text: core.value }),
+        ]),
+        plot({ ...CORE_PLOT, series: [{ values: core.series, color: 'var(--green)', fill: true }], className: 'chart__plot' }),
+      ])));
+    },
+  };
+}
+
+/**
+ * Build the CPU panel.
+ * @param {object} data Initial display data (see cpuPerformanceModel.js, toCpuViewData).
+ * @returns {{element: HTMLElement, update: (data: object) => void}} update: show new display data.
+ */
+export function createCpuPerformanceView(data) {
+  const header = cpuHeader(showSubTab);
   const top = [gaugesCard(), utilizationCard(), topProcessesCard()];
   const middle = [summaryCard(), specificationsCard()];
   const bottom = [breakdownCard(), schedulerCard()];
+  const cores = coresGrid();
   const elements = (parts) => parts.map((part) => part.element);
 
-  container.replaceChildren(h('div', { class: 'perf' }, [
-    sidebar.element,
-    h('div', { class: 'cpu' }, [
-      header.element,
-      h('div', { class: 'cpu__row cpu__row--top' }, elements(top)),
-      h('div', { class: 'cpu__row cpu__row--mid' }, elements(middle)),
-      h('div', { class: 'cpu__row cpu__row--bottom' }, elements(bottom)),
-    ]),
-  ]));
+  const overview = h('div', { class: 'cpu__overview' }, [
+    h('div', { class: 'cpu__row cpu__row--top' }, elements(top)),
+    h('div', { class: 'cpu__row cpu__row--mid' }, elements(middle)),
+    h('div', { class: 'cpu__row cpu__row--bottom' }, elements(bottom)),
+  ]);
+  const element = h('div', { class: 'cpu' }, [header.element, overview, cores.element]);
 
-  const parts = [sidebar, header, ...top, ...middle, ...bottom];
+  /**
+   * Show the Overview or the Per-core content.
+   * @param {string} name Sub-tab name from CPU_TEXTS.subTabs.
+   */
+  function showSubTab(name) {
+    const perCore = name === CPU_TEXTS.subTabs[1];
+    overview.classList.toggle('is-hidden', perCore);
+    cores.element.classList.toggle('is-hidden', !perCore);
+    header.setActiveSubTab(name);
+  }
+
+  showSubTab(CPU_TEXTS.activeSubTab);
+  const parts = [header, ...top, ...middle, ...bottom, cores];
   const update = (next) => parts.forEach((part) => part.update(next));
   update(data);
-  return { update };
+  return { element, update };
 }

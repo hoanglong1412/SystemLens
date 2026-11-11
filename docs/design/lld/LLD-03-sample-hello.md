@@ -21,7 +21,8 @@ frontend/
 └── renderer/
     ├── index.html                        <h1 id="message">, loads app.js as a module
     ├── styles.css                        .error style
-    ├── app.js                            bootstrap(), render()
+    ├── app.js                            bootstrap()
+    ├── views/hello/helloView.js          createHelloView(): render(), setMessage()
     └── api/
         └── sample/
             └── sampleHelloApi.js         SAMPLE_HELLO_PATH, getSampleHello()
@@ -69,10 +70,10 @@ sequenceDiagram
     AC-->>SA: parsed body
     SA-->>APP: body.message
     alt no error
-        APP->>DOM: render(greeting)
+        APP->>DOM: hello.setMessage(greeting)
     else an error was thrown in steps 1 to 13
         APP->>APP: console.error(err)
-        APP->>DOM: render(Cannot reach backend: message, true)
+        APP->>DOM: hello.setMessage(Cannot reach backend: message, true)
     end
 ```
 
@@ -91,9 +92,9 @@ sequenceDiagram
 | 11 | HttpServer → ApiClient | — | Matches [`SampleHelloResponse`](../../api-schema.md#samplehelloresponse). |
 | 12 | ApiClient → sampleHelloApi | — | `response.json()`. |
 | 13 | sampleHelloApi → app.js | `getSampleHello()` | Returns only `body.message`. |
-| 14 | app.js → page | `render(text)` | `#message` text = greeting, class `error` removed. |
+| 14 | app.js → hello screen | `hello.setMessage(text)` | `#message` text = greeting, class `error` removed. |
 | 15 | app.js | `bootstrap()` catch | Logs the error to the renderer console. |
-| 16 | app.js → page | `render(text, true)` | `#message` text = `Cannot reach backend: <err.message>`, class `error` added ([FR-SMP-01](../../requirements/functional-requirements.md#fr-smp-01) A1, A2). |
+| 16 | app.js → hello screen | `hello.setMessage(text, true)` | `#message` text = `Cannot reach backend: <err.message>`, class `error` added ([FR-SMP-01](../../requirements/functional-requirements.md#fr-smp-01) A1, A2). |
 
 ## 3. Data / configuration
 
@@ -112,8 +113,8 @@ sequenceDiagram
 
 | Function | File | Purpose | Parameters | Return | Errors | Flowchart |
 |---|---|---|---|---|---|---|
-| `bootstrap()` | `app.js` | Mount the UI, get the backend config, start the live data refresh ([LLD-05](LLD-05-live-performance-ui.md)), call the sample API and render the result. Called once when the module loads. | — | `Promise<void>` | none (all caught) | [F1](#f1) |
-| `render(text, isError = false)` | `app.js` | Show a message or an error in `#message`. | `text`; `isError` toggles class `error` | — | — | [F2](#f2) |
+| `bootstrap()` | `app.js` | Mount the UI, get the backend config, start the shell refresh ([LLD-05](LLD-05-live-performance-ui.md)), call the sample API and render the result. Called once when the module loads. | — | `Promise<void>` | none (all caught) | [F1](#f1) |
+| `createHelloView(initialText).setMessage(text, isError = false)` | `views/hello/helloView.js` | Show a message or an error in `#message`; kept and shown when the screen is first rendered (the screen is behind the `⇄ Hello` button, [LLD-07](LLD-07-screens.md)). | `text`; `isError` toggles class `error` | — | — | [F2](#f2) |
 | `getSampleHello(client)` | `sampleHelloApi.js` | Fetch the greeting. | `client`: configured `ApiClient` | `Promise<string>` (`"@@Hello world@@"`) | `ApiError` | — |
 
 ### 4.2 Backend
@@ -143,19 +144,21 @@ flowchart TD
     C --> N["client = new ApiClient(config)"]
     N --> L["startLiveData(client, ui) - see LLD-05"]
     L --> G["greeting = await getSampleHello(client)"]
-    G -- "throws ApiError" --> ERR["console.error(err)<br/>render(Cannot reach backend: err.message, true)"]
-    G --> R["render(greeting)"]
+    G -- "throws ApiError" --> ERR["console.error(err)<br/>hello.setMessage(Cannot reach backend: err.message, true)"]
+    G --> R["hello.setMessage(greeting)"]
     R --> E(["end"])
     ERR --> E
 ```
 
 <a id="f2"></a>
-### F2 — `render()`
+### F2 — `setMessage()`
 
 ```mermaid
 flowchart TD
-    S(["start"]) --> F["element = document.getElementById(message)"]
-    F --> T["element.textContent = text"]
+    S(["start"]) --> F["store text and isError"]
+    F --> Q{"screen rendered?"}
+    Q -- "no" --> E(["end - shown at first render"])
+    Q -- "yes" --> T["element.textContent = text"]
     T --> C["element.classList.toggle(error, isError)"]
     C --> E(["end"])
 ```

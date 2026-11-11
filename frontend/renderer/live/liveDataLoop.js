@@ -19,12 +19,28 @@ export class LiveDataLoop {
     this.onError = onError;
     this.timer = null;
     this.running = false;
+    this.inFlight = false;
+    this.refreshRequested = false;
   }
 
   /** Start loading immediately. Has no effect when already running. */
   start() {
     if (this.running) return;
     this.running = true;
+    this.#cycle();
+  }
+
+  /**
+   * Load as soon as possible instead of waiting for the timer (e.g. after the user changed what is shown).
+   * If a load is already in flight, another one starts right after it.
+   */
+  refresh() {
+    if (!this.running) return;
+    if (this.inFlight) {
+      this.refreshRequested = true;
+      return;
+    }
+    clearTimeout(this.timer);
     this.#cycle();
   }
 
@@ -40,13 +56,19 @@ export class LiveDataLoop {
    * settled, so a slow backend never has overlapping requests queued up.
    */
   async #cycle() {
+    this.inFlight = true;
     try {
       const data = await this.load();
       if (this.running) this.onData(data);
     } catch (error) {
       if (this.running) this.onError(error);
     }
-    if (this.running) {
+    this.inFlight = false;
+    if (!this.running) return;
+    if (this.refreshRequested) {
+      this.refreshRequested = false;
+      this.#cycle();
+    } else {
       this.timer = setTimeout(() => this.#cycle(), this.intervalMs);
     }
   }

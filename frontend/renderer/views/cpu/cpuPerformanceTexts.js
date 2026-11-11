@@ -8,6 +8,7 @@ export const CPU_TEXTS = Object.freeze({
   title: 'CPU',
   subTabs: ['Overview', 'Per-core'],
   activeSubTab: 'Overview',
+  cores: { coreLabel: 'Core', title: 'Logical processors' },
   gauges: { title: 'Live gauges', usage: 'Usage', clock: 'Clock', temperature: 'Temp' },
   utilization: {
     title: '% Utilization',
