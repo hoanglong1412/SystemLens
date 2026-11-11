@@ -10,6 +10,9 @@
 #include "providers/windows/WindowsMemoryProvider.h"
 #include "providers/windows/WindowsNetworkProvider.h"
 #include "providers/windows/WindowsProcessProvider.h"
+#include "providers/windows/WindowsServiceProvider.h"
+#include "providers/windows/WindowsStartupProvider.h"
+#include "providers/windows/WindowsUserSessionProvider.h"
 #include "providers/windows/WindowsSystemInfoProvider.h"
 
 namespace systemlens::providers {
@@ -29,6 +32,9 @@ PlatformProviders createPlatformProviders()
         .network = std::make_shared<windows_os::WindowsNetworkProvider>(),
         .gpu = std::make_shared<windows_os::WindowsGpuProvider>(),
         .process = std::make_shared<windows_os::WindowsProcessProvider>(),
+        .services = std::make_shared<windows_os::WindowsServiceProvider>(),
+        .startup = std::make_shared<windows_os::WindowsStartupProvider>(),
+        .sessions = std::make_shared<windows_os::WindowsUserSessionProvider>(),
     };
 }
 

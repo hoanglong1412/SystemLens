@@ -10,7 +10,10 @@
 
 #include <winioctl.h>
 
+#include <array>
+#include <cstring>
 #include <map>
+#include <string_view>
 
 namespace systemlens::providers::windows_os {
 
@@ -19,6 +22,8 @@ namespace {
 /** Physical drive numbers are small and dense; gaps appear only after hot-unplugging. */
 constexpr DWORD kMaxPhysicalDrives = 32;
 constexpr int kDriveLetterCount = 26;
+/** Room for the storage descriptor and the vendor / product / serial strings that follow it. */
+constexpr std::size_t kDescriptorBufferBytes = 1024;
 
 /**
  * @brief Send a query IOCTL that takes an optional input and returns one fixed-size structure.
@@ -104,21 +109,71 @@ DiskKind readKind(HANDLE disk)
 }
 
 /**
- * @brief Read the cumulative busy time of a physical drive.
+ * @brief Read the performance counters of a physical drive.
  *
  * The disk driver keeps IdleTime (time with an empty request queue) and QueryTime (its clock at
  * the time of the call), both in 100 ns units; their difference grows only while the disk is busy.
  * @param disk Physical drive handle.
- * @return Busy time, or std::nullopt when disk performance counters are disabled.
+ * @return The counters, or std::nullopt when disk performance counters are disabled.
  */
-std::optional<std::chrono::duration<double>> readBusyTime(HANDLE disk)
+std::optional<DISK_PERFORMANCE> readPerformance(HANDLE disk)
 {
     DISK_PERFORMANCE performance{};
     if (!queryDevice(disk, IOCTL_DISK_PERFORMANCE, nullptr, 0, performance))
     {
         return std::nullopt;
     }
-    return fromHundredNanoseconds(performance.QueryTime.QuadPart - performance.IdleTime.QuadPart);
+    return performance;
+}
+
+/**
+ * @brief Read the size of a physical drive.
+ * @param disk Physical drive handle.
+ * @return Capacity in bytes, or std::nullopt when the drive does not answer.
+ */
+std::optional<std::uint64_t> readCapacity(HANDLE disk)
+{
+    GET_LENGTH_INFORMATION length{};
+    if (!queryDevice(disk, IOCTL_DISK_GET_LENGTH_INFO, nullptr, 0, length))
+    {
+        return std::nullopt;
+    }
+    return static_cast<std::uint64_t>(length.Length.QuadPart);
+}
+
+/**
+ * @brief Read the product name (vendor + model) of a physical drive.
+ * @param disk Physical drive handle.
+ * @return Product name, or an empty string when the driver reports none.
+ */
+std::string readModel(HANDLE disk)
+{
+    STORAGE_PROPERTY_QUERY query{};
+    query.PropertyId = StorageDeviceProperty;
+    query.QueryType = PropertyStandardQuery;
+
+    // The descriptor is followed by its strings; ProductIdOffset is relative to the start of the buffer.
+    std::array<char, kDescriptorBufferBytes> buffer{};
+    DWORD returned = 0;
+    if (!::DeviceIoControl(disk, IOCTL_STORAGE_QUERY_PROPERTY, &query, sizeof(query), buffer.data(),
+                           static_cast<DWORD>(buffer.size()), &returned, nullptr)
+        || returned < sizeof(STORAGE_DEVICE_DESCRIPTOR))
+    {
+        return {};
+    }
+    const auto* descriptor = reinterpret_cast<const STORAGE_DEVICE_DESCRIPTOR*>(buffer.data());
+    if (descriptor->ProductIdOffset == 0 || descriptor->ProductIdOffset >= returned)
+    {
+        return {};
+    }
+    const char* text = buffer.data() + descriptor->ProductIdOffset;
+    const std::size_t length = ::strnlen(text, returned - descriptor->ProductIdOffset);
+    std::string_view product(text, length);
+    while (!product.empty() && product.back() == ' ')
+    {
+        product.remove_suffix(1);
+    }
+    return std::string(product);
 }
 
 } // namespace
@@ -144,12 +199,19 @@ std::vector<DiskSample> WindowsDiskProvider::readDisks()
         {
             name += " (" + found->second + ")";
         }
-        disks.push_back(DiskSample{
-            .id = "disk" + std::to_string(number),
-            .name = std::move(name),
-            .kind = readKind(disk.get()),
-            .busyTime = readBusyTime(disk.get()),
-        });
+        DiskSample sample;
+        sample.id = "disk" + std::to_string(number);
+        sample.name = std::move(name);
+        sample.kind = readKind(disk.get());
+        sample.model = readModel(disk.get());
+        sample.capacityBytes = readCapacity(disk.get());
+        if (const auto performance = readPerformance(disk.get()))
+        {
+            sample.busyTime = fromHundredNanoseconds(performance->QueryTime.QuadPart - performance->IdleTime.QuadPart);
+            sample.bytesRead = static_cast<std::uint64_t>(performance->BytesRead.QuadPart);
+            sample.bytesWritten = static_cast<std::uint64_t>(performance->BytesWritten.QuadPart);
+        }
+        disks.push_back(std::move(sample));
     }
     return disks;
 }

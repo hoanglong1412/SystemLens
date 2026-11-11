@@ -4,10 +4,16 @@
  */
 #include "app/Application.h"
 
+#include "api/inventory/InventoryController.h"
 #include "api/performance/PerformanceController.h"
+#include "api/performance/PerformanceDetailController.h"
+#include "api/processes/ProcessController.h"
 #include "api/system/SystemController.h"
 #include "providers/PlatformProviders.h"
+#include "services/inventory/SystemInventoryService.h"
+#include "services/performance/PerformanceDetailService.h"
 #include "services/performance/PerformanceService.h"
+#include "services/processes/ProcessListService.h"
 #include "services/system/SystemOverviewService.h"
 
 #include <nlohmann/json.hpp>
@@ -46,7 +52,8 @@ api::HttpServerOptions toServerOptions(const AppConfig& config)
  */
 Application::Application(AppConfig config)
     : m_config(std::move(config))
-    , m_metrics(std::make_shared<services::monitoring::MetricsCollector>(providers::createPlatformProviders()))
+    , m_providers(providers::createPlatformProviders())
+    , m_metrics(std::make_shared<services::monitoring::MetricsCollector>(m_providers))
     , m_server(toServerOptions(m_config))
 {
     registerControllers();
@@ -94,6 +101,13 @@ void Application::registerControllers()
         std::make_shared<services::system::SystemOverviewService>(m_metrics)));
     m_controllers.push_back(std::make_unique<api::performance::PerformanceController>(
         std::make_shared<services::performance::PerformanceService>(m_metrics)));
+    m_controllers.push_back(std::make_unique<api::performance::PerformanceDetailController>(
+        std::make_shared<services::performance::PerformanceDetailService>(m_metrics)));
+    m_controllers.push_back(std::make_unique<api::processes::ProcessController>(
+        std::make_shared<services::processes::ProcessListService>(m_metrics)));
+    m_controllers.push_back(std::make_unique<api::inventory::InventoryController>(
+        std::make_shared<services::inventory::SystemInventoryService>(
+            m_providers.services, m_providers.startup, m_providers.sessions, m_metrics)));
 #if SYSTEMLENS_ENABLE_SAMPLE_API
     m_controllers.push_back(std::make_unique<api::sample::SampleHelloController>(
         std::make_shared<services::sample::SampleHelloService>()));

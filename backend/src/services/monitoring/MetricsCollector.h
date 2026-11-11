@@ -21,6 +21,7 @@
 #include <string>
 #include <thread>
 #include <unordered_map>
+#include <vector>
 
 namespace systemlens::services::monitoring {
 
@@ -30,6 +31,8 @@ inline constexpr std::chrono::milliseconds kDefaultSampleInterval{1000};
 inline constexpr std::size_t kHistoryCapacity = 61;
 /** Rows of the "Top CPU processes" table. */
 inline constexpr std::size_t kTopProcessCount = 10;
+/** Applications kept in the App history list. */
+inline constexpr std::size_t kAppHistoryLimit = 200;
 
 class MetricsCollector final : public IMetricsSource
 {
@@ -57,12 +60,29 @@ private:
         providers::CpuStaticInfo cpuInfo;
     };
 
+    /** Cumulative bytes of one disk. */
+    struct DiskIo
+    {
+        std::uint64_t bytesRead = 0;
+        std::uint64_t bytesWritten = 0;
+    };
+
+    /** Usage of one application name since the collector started. */
+    struct AppAccumulator
+    {
+        double cpuTimeSeconds = 0.0;
+        std::uint64_t peakMemoryBytes = 0;
+        std::uint64_t memoryBytes = 0;
+        std::uint32_t runningInstances = 0;
+    };
+
     /** Raw counters of the previous tick, needed to compute deltas. */
     struct PreviousSample
     {
         SteadyTime takenAt;
         providers::CpuSample cpu;
         std::unordered_map<std::string, Seconds> diskBusyTimes;
+        std::unordered_map<std::string, DiskIo> diskIo;
         std::unordered_map<std::string, providers::NetworkSample> networks;
         std::unordered_map<std::uint32_t, Seconds> processCpuTimes;
     };
@@ -97,6 +117,9 @@ private:
     PreviousSample m_current; ///< Counters of the tick in progress; becomes m_previous when it succeeds.
     CpuHistories m_cpuHistories;
     History<double> m_memoryHistory{kHistoryCapacity};
+    std::vector<History<double>> m_coreHistories; ///< One per logical processor.
+    std::unordered_map<std::string, AppAccumulator> m_apps; ///< By process name.
+    std::chrono::system_clock::time_point m_appsSince = std::chrono::system_clock::now();
     std::map<std::string, History<double>> m_deviceHistories; ///< Disks, adapters and GPUs by id.
     double m_highestFrequencyMhz = 0.0;                       ///< Scale of the clock gauge.
     bool m_failureLogged = false;

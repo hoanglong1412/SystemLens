@@ -3,7 +3,7 @@
 openapi: 3.1.0
 info:
   title: SystemLens Backend API
-  version: 0.2.0
+  version: 0.3.0
   description: >
     Local HTTP API served by systemlens-backend (systemlens-backend.exe on Windows) on 127.0.0.1.
     The port is chosen at startup and reported to the Electron main process
@@ -27,6 +27,10 @@ tags:
     description: >
       Live performance data of the Performance tab. Values come from a backend sampler that reads
       the operating system once per second and keeps the last 60 seconds of history.
+  - name: processes
+    description: "Process list and per-application usage accumulated since the backend started."
+  - name: inventory
+    description: "Services, startup items and user sessions. Answered with available=false on platforms that cannot provide them."
 paths:
   /api/v1/system/overview:
     get:
@@ -72,6 +76,166 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CpuPerformance"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/v1/performance/cpu/cores:
+    get:
+      tags: [performance]
+      operationId: getCpuCores
+      summary: "Usage and 60-second history of every logical processor."
+      responses:
+        "200":
+          description: Current data.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CpuCores"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/v1/performance/memory:
+    get:
+      tags: [performance]
+      operationId: getMemoryPerformance
+      summary: "Everything shown by the Performance > Memory screen."
+      responses:
+        "200":
+          description: Current data.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MemoryPerformance"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/v1/performance/disks:
+    get:
+      tags: [performance]
+      operationId: getDiskPerformance
+      summary: "Detail of every physical disk (Performance > Disk screens)."
+      responses:
+        "200":
+          description: Current data.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DiskPerformance"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/v1/performance/networks:
+    get:
+      tags: [performance]
+      operationId: getNetworkPerformance
+      summary: "Detail of every network adapter (Performance > Ethernet / Wi-Fi screens)."
+      responses:
+        "200":
+          description: Current data.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NetworkPerformance"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/v1/performance/gpus:
+    get:
+      tags: [performance]
+      operationId: getGpuPerformance
+      summary: "Detail of every graphics adapter (Performance > GPU screens)."
+      responses:
+        "200":
+          description: Current data.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GpuPerformance"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/v1/processes:
+    get:
+      tags: [processes]
+      operationId: getProcesses
+      summary: "Every process with CPU share, memory, owner and thread count."
+      responses:
+        "200":
+          description: Current data.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProcessList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/v1/apps/history:
+    get:
+      tags: [processes]
+      operationId: getAppHistory
+      summary: "Resource usage per application name, accumulated since the backend started."
+      responses:
+        "200":
+          description: Current data.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppHistory"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/v1/services:
+    get:
+      tags: [inventory]
+      operationId: getServices
+      summary: "Installed services with state and start type."
+      responses:
+        "200":
+          description: Current data.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServiceList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/v1/startup:
+    get:
+      tags: [inventory]
+      operationId: getStartupItems
+      summary: "Programs started at logon."
+      responses:
+        "200":
+          description: Current data.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StartupList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/v1/users:
+    get:
+      tags: [inventory]
+      operationId: getUsers
+      summary: "Logged-on user sessions and resource usage per user."
+      responses:
+        "200":
+          description: Current data.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserList"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "500":
@@ -397,6 +561,348 @@ components:
         source:
           type: string
           description: Where the counters come from, e.g. "PDH \System, \Processor(_Total)" or "/proc/stat".
+    RateHistory:
+      type: array
+      description: "Raw samples (bytes per second or bits per second, see the field), oldest first, at most 61 items. The frontend scales them to the peak of the window."
+      items:
+        type: number
+    AvailabilityFields:
+      type: object
+      description: "Fields shared by the inventory responses (documentation only, repeated in each response)."
+      properties:
+        available:
+          type: boolean
+        reason:
+          type: [string, "null"]
+    CpuCores:
+      type: object
+      required: [cores]
+      properties:
+        cores:
+          type: array
+          description: "One item per logical processor, in index order."
+          items:
+            $ref: "#/components/schemas/CoreUsage"
+    CoreUsage:
+      type: object
+      required: [index, usagePercent, history]
+      properties:
+        index:
+          type: integer
+        usagePercent:
+          type: number
+        history:
+          $ref: "#/components/schemas/PercentHistory"
+    MemoryPerformance:
+      type: object
+      required: [totalBytes, usedBytes, availableBytes, cachedBytes, committedBytes, commitLimitBytes, usedPercent, history, topProcesses]
+      properties:
+        totalBytes:
+          type: integer
+        usedBytes:
+          type: integer
+          description: "total - available."
+        availableBytes:
+          type: integer
+        cachedBytes:
+          type: [integer, "null"]
+          description: "Windows - system cache; Linux - Cached + Buffers."
+        committedBytes:
+          type: [integer, "null"]
+          description: "Windows - CommitTotal; Linux - Committed_AS."
+        commitLimitBytes:
+          type: [integer, "null"]
+          description: "Windows - CommitLimit; Linux - CommitLimit."
+        usedPercent:
+          type: number
+        history:
+          $ref: "#/components/schemas/PercentHistory"
+        topProcesses:
+          type: array
+          description: "Up to 10 processes using the most memory, highest first."
+          items:
+            $ref: "#/components/schemas/CpuProcess"
+    DiskPerformance:
+      type: object
+      required: [disks]
+      properties:
+        disks:
+          type: array
+          items:
+            $ref: "#/components/schemas/DiskDetail"
+    DiskDetail:
+      type: object
+      required: [id, name, model, kind, capacityBytes, activePercent, readBytesPerSecond, writeBytesPerSecond, activeHistory, readHistory, writeHistory]
+      properties:
+        id:
+          type: string
+          description: "Same id as the matching PerformanceResource."
+        name:
+          type: string
+        model:
+          type: [string, "null"]
+        kind:
+          type: string
+          enum: [ssd, hdd, unknown]
+        capacityBytes:
+          type: [integer, "null"]
+        activePercent:
+          type: [number, "null"]
+        readBytesPerSecond:
+          type: [number, "null"]
+        writeBytesPerSecond:
+          type: [number, "null"]
+        activeHistory:
+          $ref: "#/components/schemas/PercentHistory"
+        readHistory:
+          $ref: "#/components/schemas/RateHistory"
+        writeHistory:
+          $ref: "#/components/schemas/RateHistory"
+    NetworkPerformance:
+      type: object
+      required: [adapters]
+      properties:
+        adapters:
+          type: array
+          items:
+            $ref: "#/components/schemas/NetworkDetail"
+    NetworkDetail:
+      type: object
+      required: [id, name, kind, description, macAddress, linkSpeedBitsPerSecond, sendBitsPerSecond, receiveBitsPerSecond, sendHistory, receiveHistory]
+      properties:
+        id:
+          type: string
+          description: "Same id as the matching PerformanceResource."
+        name:
+          type: string
+          description: "Adapter name as the operating system shows it."
+        kind:
+          type: string
+          enum: [ethernet, wifi]
+        description:
+          type: [string, "null"]
+        macAddress:
+          type: [string, "null"]
+        linkSpeedBitsPerSecond:
+          type: [number, "null"]
+        sendBitsPerSecond:
+          type: number
+        receiveBitsPerSecond:
+          type: number
+        sendHistory:
+          $ref: "#/components/schemas/RateHistory"
+        receiveHistory:
+          $ref: "#/components/schemas/RateHistory"
+    GpuPerformance:
+      type: object
+      required: [gpus]
+      properties:
+        gpus:
+          type: array
+          items:
+            $ref: "#/components/schemas/GpuDetail"
+    GpuDetail:
+      type: object
+      required: [id, name, model, utilizationPercent, temperatureCelsius, memoryTotalBytes, memoryUsedBytes, history]
+      properties:
+        id:
+          type: string
+          description: "Same id as the matching PerformanceResource."
+        name:
+          type: string
+        model:
+          type: string
+        utilizationPercent:
+          type: [number, "null"]
+        temperatureCelsius:
+          type: [number, "null"]
+        memoryTotalBytes:
+          type: [integer, "null"]
+        memoryUsedBytes:
+          type: [integer, "null"]
+          description: "Only where the driver reports it (Linux amdgpu)."
+        history:
+          $ref: "#/components/schemas/PercentHistory"
+    ProcessList:
+      type: object
+      required: [processes]
+      properties:
+        processes:
+          type: array
+          description: "Highest CPU first."
+          items:
+            $ref: "#/components/schemas/ProcessEntry"
+    ProcessEntry:
+      type: object
+      required: [pid, parentPid, name, userName, cpuPercent, cpuTimeSeconds, memoryBytes, threadCount, status, commandLine, isSelf]
+      properties:
+        pid:
+          type: integer
+        parentPid:
+          type: integer
+        name:
+          type: string
+        userName:
+          type: [string, "null"]
+          description: "Owner; null when the operating system does not let the backend read it."
+        cpuPercent:
+          type: number
+          description: "Share of the total capacity of all logical processors (0..100)."
+        cpuTimeSeconds:
+          type: number
+          description: "Cumulative user + kernel CPU time."
+        memoryBytes:
+          type: integer
+          description: "Windows - private working set; Linux - resident set size."
+        threadCount:
+          type: [integer, "null"]
+        status:
+          type: [string, "null"]
+          description: "Linux only, e.g. Running, Sleeping, Zombie."
+        commandLine:
+          type: [string, "null"]
+          description: "Linux only."
+        isSelf:
+          type: boolean
+    AppHistory:
+      type: object
+      required: [since, apps]
+      properties:
+        since:
+          type: string
+          format: date-time
+          description: "When the backend started collecting; usage is accumulated from then on, in memory only."
+        apps:
+          type: array
+          description: "Highest accumulated CPU time first, at most 200 items."
+          items:
+            $ref: "#/components/schemas/AppUsage"
+    AppUsage:
+      type: object
+      required: [name, cpuTimeSeconds, peakMemoryBytes, memoryBytes, runningInstances]
+      properties:
+        name:
+          type: string
+        cpuTimeSeconds:
+          type: number
+          description: "CPU time used by every instance since the backend started, including instances that already exited."
+        peakMemoryBytes:
+          type: integer
+          description: "Highest sum over the running instances seen in one sample."
+        memoryBytes:
+          type: integer
+          description: "Sum over the instances running now."
+        runningInstances:
+          type: integer
+    ServiceList:
+      type: object
+      required: [available, reason, services]
+      properties:
+        available:
+          type: boolean
+        reason:
+          type: [string, "null"]
+          description: "Why the list is not available (e.g. systemd missing, not implemented)."
+        services:
+          type: array
+          items:
+            $ref: "#/components/schemas/ServiceEntry"
+    ServiceEntry:
+      type: object
+      required: [name, displayName, description, state, startType, pid]
+      properties:
+        name:
+          type: string
+        displayName:
+          type: string
+        description:
+          type: [string, "null"]
+        state:
+          type: string
+          enum: [running, stopped, starting, stopping, paused, other]
+        startType:
+          type: string
+          enum: [automatic, manual, disabled, static, other]
+        pid:
+          type: [integer, "null"]
+          description: "Windows only."
+    StartupList:
+      type: object
+      required: [available, reason, items]
+      properties:
+        available:
+          type: boolean
+        reason:
+          type: [string, "null"]
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/StartupEntry"
+    StartupEntry:
+      type: object
+      required: [name, command, location, scope, enabled]
+      properties:
+        name:
+          type: string
+        command:
+          type: string
+        location:
+          type: string
+          description: "Registry key or folder the entry comes from."
+        scope:
+          type: string
+          enum: [user, allUsers]
+        enabled:
+          type: boolean
+    UserList:
+      type: object
+      required: [available, reason, sessions, users]
+      properties:
+        available:
+          type: boolean
+          description: "Refers to sessions; users is always computed from the process list."
+        reason:
+          type: [string, "null"]
+        sessions:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserSession"
+        users:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserUsage"
+    UserSession:
+      type: object
+      required: [userName, sessionId, sessionName, state, logonTime, host]
+      properties:
+        userName:
+          type: string
+        sessionId:
+          type: [string, "null"]
+        sessionName:
+          type: string
+        state:
+          type: string
+          description: "Active, Connected, Disconnected or Other."
+        logonTime:
+          type: [string, "null"]
+          format: date-time
+        host:
+          type: [string, "null"]
+          description: "Remote host or client name, when the session is remote."
+    UserUsage:
+      type: object
+      required: [userName, processCount, cpuPercent, memoryBytes]
+      properties:
+        userName:
+          type: string
+          description: "Owner of the processes; (unknown) groups processes whose owner cannot be read."
+        processCount:
+          type: integer
+        cpuPercent:
+          type: number
+        memoryBytes:
+          type: integer
     Problem:
       type: object
       description: Error body (RFC 7807, media type application/problem+json).

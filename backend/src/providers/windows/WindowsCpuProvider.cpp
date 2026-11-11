@@ -97,11 +97,39 @@ void readTopology(CpuStaticInfo& info)
 }
 
 /**
- * @brief Read the cumulative CPU times, summed over the logical processors.
- * @return Times split into user, kernel, DPC, interrupt and idle.
+ * @brief Convert the counters of one processor (or the sum of several) to CPU times.
+ * @param idle      IdleTime, 100 ns units.
+ * @param kernel    KernelTime (includes idle, DPC and interrupt time).
+ * @param user      UserTime.
+ * @param dpc       DpcTime.
+ * @param interrupt InterruptTime.
+ * @return Disjoint parts: Windows counts idle, DPC and interrupt time as kernel time, so they are subtracted.
+ */
+CpuTimes toCpuTimes(std::int64_t idle, std::int64_t kernel, std::int64_t user, std::int64_t dpc,
+                    std::int64_t interrupt)
+{
+    return CpuTimes{
+        .user = fromHundredNanoseconds(user),
+        .kernel = fromHundredNanoseconds(std::max<std::int64_t>(kernel - idle - dpc - interrupt, 0)),
+        .dpc = fromHundredNanoseconds(dpc),
+        .interrupt = fromHundredNanoseconds(interrupt),
+        .idle = fromHundredNanoseconds(idle),
+    };
+}
+
+/** CPU times of all processors together and of each one. */
+struct ProcessorTimes
+{
+    CpuTimes total;
+    std::vector<CpuTimes> perCore;
+};
+
+/**
+ * @brief Read the cumulative CPU times.
+ * @return Times of every logical processor and their sum.
  * @throws ProviderError if the native query fails.
  */
-CpuTimes readTimes()
+ProcessorTimes readTimes()
 {
     SYSTEM_INFO system{};
     ::GetSystemInfo(&system);
@@ -122,6 +150,8 @@ CpuTimes readTimes()
     std::int64_t user = 0;
     std::int64_t dpc = 0;
     std::int64_t interrupt = 0;
+    ProcessorTimes times;
+    times.perCore.reserve(processors.size());
     for (const native::ProcessorPerformanceInformation& processor : processors)
     {
         idle += processor.IdleTime.QuadPart;
@@ -129,15 +159,12 @@ CpuTimes readTimes()
         user += processor.UserTime.QuadPart;
         dpc += processor.DpcTime.QuadPart;
         interrupt += processor.InterruptTime.QuadPart;
+        times.perCore.push_back(toCpuTimes(processor.IdleTime.QuadPart, processor.KernelTime.QuadPart,
+                                           processor.UserTime.QuadPart, processor.DpcTime.QuadPart,
+                                           processor.InterruptTime.QuadPart));
     }
-    return CpuTimes{
-        .user = fromHundredNanoseconds(user),
-        // Windows counts idle, DPC and interrupt time as kernel time; CpuTimes wants disjoint parts.
-        .kernel = fromHundredNanoseconds(std::max<std::int64_t>(kernel - idle - dpc - interrupt, 0)),
-        .dpc = fromHundredNanoseconds(dpc),
-        .interrupt = fromHundredNanoseconds(interrupt),
-        .idle = fromHundredNanoseconds(idle),
-    };
+    times.total = toCpuTimes(idle, kernel, user, dpc, interrupt);
+    return times;
 }
 
 } // namespace
@@ -188,7 +215,9 @@ CpuStaticInfo WindowsCpuProvider::readStaticInfo() const
 CpuSample WindowsCpuProvider::readSample()
 {
     CpuSample sample;
-    sample.times = readTimes();
+    ProcessorTimes times = readTimes();
+    sample.times = times.total;
+    sample.perCore = std::move(times.perCore);
 
     if (!m_query.collect())
     {

@@ -107,6 +107,7 @@ WindowsGpuProvider::WindowsGpuProvider()
         }
         m_adapters.push_back(Adapter{
             .model = toUtf8(description.Description),
+            .dedicatedMemoryBytes = description.DedicatedVideoMemory,
             .luid = makeLuid(static_cast<std::uint32_t>(description.AdapterLuid.HighPart),
                              description.AdapterLuid.LowPart),
         });
@@ -147,6 +148,9 @@ std::vector<GpuSample> WindowsGpuProvider::readGpus()
             .model = m_adapters[index].model,
             .utilizationPercent = std::nullopt,
             .temperatureCelsius = std::nullopt,
+            .memoryTotalBytes = m_adapters[index].dedicatedMemoryBytes != 0
+                ? std::optional(m_adapters[index].dedicatedMemoryBytes) : std::nullopt,
+            .memoryUsedBytes = std::nullopt,
         };
         if (hasData)
         {

@@ -5,6 +5,7 @@
 #pragma once
 
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -23,6 +24,9 @@ struct NetworkSample
     std::string id;   ///< Stable identifier, e.g. "net-eth0".
     std::string name; ///< Adapter name as the OS shows it, e.g. "vEthernet (WSL)", "eth0".
     NetworkKind kind = NetworkKind::Ethernet;
+    std::string description;                     ///< Adapter / driver description; may be empty.
+    std::string macAddress;                      ///< "AA:BB:CC:DD:EE:FF"; may be empty.
+    std::optional<double> linkSpeedBitsPerSecond;
     std::uint64_t bytesSent = 0;     ///< Cumulative.
     std::uint64_t bytesReceived = 0; ///< Cumulative.
 };

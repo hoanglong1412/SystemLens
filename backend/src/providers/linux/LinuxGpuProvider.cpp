@@ -182,7 +182,11 @@ std::vector<GpuSample> LinuxGpuProvider::readGpus()
             .model = card.model,
             .utilizationPercent = std::nullopt,
             .temperatureCelsius = readTemperature(card.devicePath),
+            .memoryTotalBytes = std::nullopt,
+            .memoryUsedBytes = std::nullopt,
         };
+        sample.memoryTotalBytes = procfs::readUnsigned(card.devicePath / "mem_info_vram_total");
+        sample.memoryUsedBytes = procfs::readUnsigned(card.devicePath / "mem_info_vram_used");
         if (const auto busy = procfs::readUnsigned(card.devicePath / "gpu_busy_percent"))
         {
             sample.utilizationPercent = std::min(static_cast<double>(*busy), kMaxPercent);

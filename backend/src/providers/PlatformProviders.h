@@ -15,6 +15,9 @@
 #include "providers/INetworkProvider.h"
 #include "providers/IProcessProvider.h"
 #include "providers/ISystemInfoProvider.h"
+#include "providers/ISystemServiceProvider.h"
+#include "providers/IStartupProvider.h"
+#include "providers/IUserSessionProvider.h"
 
 #include <memory>
 
@@ -30,6 +33,9 @@ struct PlatformProviders
     std::shared_ptr<INetworkProvider> network;
     std::shared_ptr<IGpuProvider> gpu;
     std::shared_ptr<IProcessProvider> process;
+    std::shared_ptr<ISystemServiceProvider> services;
+    std::shared_ptr<IStartupProvider> startup;
+    std::shared_ptr<IUserSessionProvider> sessions;
 };
 
 PlatformProviders createPlatformProviders();

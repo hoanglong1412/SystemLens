@@ -45,10 +45,16 @@ add_library(systemlens_core STATIC
     src/api/ApiResponse.cpp
     src/api/HttpServer.cpp
     src/api/JsonHelpers.cpp
+    src/api/inventory/InventoryController.cpp
     src/api/performance/PerformanceController.cpp
+    src/api/performance/PerformanceDetailController.cpp
+    src/api/processes/ProcessController.cpp
     src/api/system/SystemController.cpp
     src/services/monitoring/MetricsCollector.cpp
+    src/services/inventory/SystemInventoryService.cpp
+    src/services/performance/PerformanceDetailService.cpp
     src/services/performance/PerformanceService.cpp
+    src/services/processes/ProcessListService.cpp
     src/services/system/SystemOverviewService.cpp
 )
 
@@ -64,6 +70,9 @@ if(WIN32)
         src/providers/windows/WindowsNetworkProvider.cpp
         src/providers/windows/WindowsPlatformProviders.cpp
         src/providers/windows/WindowsProcessProvider.cpp
+        src/providers/windows/WindowsServiceProvider.cpp
+        src/providers/windows/WindowsStartupProvider.cpp
+        src/providers/windows/WindowsUserSessionProvider.cpp
         src/providers/windows/WindowsSystemInfoProvider.cpp
         src/providers/windows/WindowsUtil.cpp
     )
@@ -83,6 +92,9 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
         src/providers/linux/LinuxNetworkProvider.cpp
         src/providers/linux/LinuxPlatformProviders.cpp
         src/providers/linux/LinuxProcessProvider.cpp
+        src/providers/linux/LinuxServiceProvider.cpp
+        src/providers/linux/LinuxStartupProvider.cpp
+        src/providers/linux/LinuxUserSessionProvider.cpp
         src/providers/linux/LinuxSystemInfoProvider.cpp
         src/providers/linux/ProcFs.cpp
     )

@@ -10,6 +10,7 @@
 #include <cstdint>
 #include <optional>
 #include <string>
+#include <vector>
 
 namespace systemlens::providers {
 
@@ -63,6 +64,7 @@ struct CpuSample
 {
     CpuTimes times;
     CpuActivityCounters activity;
+    std::vector<CpuTimes> perCore; ///< One entry per logical processor, in index order.
     std::optional<double> frequencyMhz;       ///< Current clock averaged over logical processors.
     std::optional<double> temperatureCelsius; ///< Package temperature.
 };

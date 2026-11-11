@@ -117,6 +117,39 @@ public:
     }
 };
 
+/** Placeholder ISystemServiceProvider. */
+class MacosServiceProvider final : public ISystemServiceProvider
+{
+public:
+    /** @throws NotImplementedError always. */
+    [[nodiscard]] std::vector<SystemServiceInfo> readServices() const override
+    {
+        throw NotImplementedError("MacosServiceProvider::readServices");
+    }
+};
+
+/** Placeholder IStartupProvider. */
+class MacosStartupProvider final : public IStartupProvider
+{
+public:
+    /** @throws NotImplementedError always. */
+    [[nodiscard]] std::vector<StartupItem> readStartupItems() const override
+    {
+        throw NotImplementedError("MacosStartupProvider::readStartupItems");
+    }
+};
+
+/** Placeholder IUserSessionProvider. */
+class MacosUserSessionProvider final : public IUserSessionProvider
+{
+public:
+    /** @throws NotImplementedError always. */
+    [[nodiscard]] std::vector<UserSession> readSessions() const override
+    {
+        throw NotImplementedError("MacosUserSessionProvider::readSessions");
+    }
+};
+
 } // namespace macos
 
 /**
@@ -133,6 +166,9 @@ PlatformProviders createPlatformProviders()
         .network = std::make_shared<macos::MacosNetworkProvider>(),
         .gpu = std::make_shared<macos::MacosGpuProvider>(),
         .process = std::make_shared<macos::MacosProcessProvider>(),
+        .services = std::make_shared<macos::MacosServiceProvider>(),
+        .startup = std::make_shared<macos::MacosStartupProvider>(),
+        .sessions = std::make_shared<macos::MacosUserSessionProvider>(),
     };
 }
 

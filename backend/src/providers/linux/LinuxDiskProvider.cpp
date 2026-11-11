@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <filesystem>
+#include <optional>
 #include <string_view>
 
 namespace systemlens::providers::linux_os {
@@ -19,6 +20,10 @@ constexpr const char* kBlockDir = "/sys/block";
 constexpr std::string_view kOpticalPrefix = "sr";
 /** Index of io_ticks (milliseconds with I/O in flight) in /sys/block/<dev>/stat. */
 constexpr std::size_t kIoTicksIndex = 9;
+constexpr std::size_t kSectorsReadIndex = 2;
+constexpr std::size_t kSectorsWrittenIndex = 6;
+/** The kernel counts sectors of 512 bytes in stat and size, whatever the real sector size is. */
+constexpr std::uint64_t kBytesPerSector = 512;
 
 /**
  * @brief Tell SSD from HDD using queue/rotational.
@@ -35,12 +40,20 @@ DiskKind readKind(const std::filesystem::path& blockPath)
     return *rotational == 0 ? DiskKind::Ssd : DiskKind::Hdd;
 }
 
+/** Raw counters of /sys/block/<dev>/stat that the provider uses. */
+struct DiskStat
+{
+    std::uint64_t sectorsRead = 0;
+    std::uint64_t sectorsWritten = 0;
+    std::uint64_t ioTicksMs = 0; ///< Milliseconds with I/O in flight.
+};
+
 /**
- * @brief Read the cumulative busy time of a block device.
+ * @brief Read the counters of a block device.
  * @param blockPath /sys/block/<dev>.
- * @return io_ticks as a duration, or std::nullopt when the stat file is unreadable.
+ * @return The counters, or std::nullopt when the stat file is unreadable or too short.
  */
-std::optional<std::chrono::duration<double>> readBusyTime(const std::filesystem::path& blockPath)
+std::optional<DiskStat> readStat(const std::filesystem::path& blockPath)
 {
     const auto content = procfs::readFile(blockPath / "stat");
     if (!content)
@@ -52,12 +65,14 @@ std::optional<std::chrono::duration<double>> readBusyTime(const std::filesystem:
     {
         return std::nullopt;
     }
-    const auto milliseconds = procfs::parseUnsigned(fields[kIoTicksIndex]);
-    if (!milliseconds)
+    const auto read = procfs::parseUnsigned(fields[kSectorsReadIndex]);
+    const auto written = procfs::parseUnsigned(fields[kSectorsWrittenIndex]);
+    const auto ticks = procfs::parseUnsigned(fields[kIoTicksIndex]);
+    if (!read || !written || !ticks)
     {
         return std::nullopt;
     }
-    return std::chrono::duration<double, std::milli>(static_cast<double>(*milliseconds));
+    return DiskStat{.sectorsRead = *read, .sectorsWritten = *written, .ioTicksMs = *ticks};
 }
 
 } // namespace
@@ -86,12 +101,22 @@ std::vector<DiskSample> LinuxDiskProvider::readDisks()
     for (std::size_t index = 0; index < names.size(); ++index)
     {
         const std::filesystem::path blockPath = std::filesystem::path(kBlockDir) / names[index];
-        disks.push_back(DiskSample{
-            .id = "disk" + std::to_string(index),
-            .name = "Disk " + std::to_string(index) + " (" + names[index] + ")",
-            .kind = readKind(blockPath),
-            .busyTime = readBusyTime(blockPath),
-        });
+        DiskSample disk;
+        disk.id = "disk" + std::to_string(index);
+        disk.name = "Disk " + std::to_string(index) + " (" + names[index] + ")";
+        disk.kind = readKind(blockPath);
+        disk.model = procfs::readTrimmed(blockPath / "device" / "model").value_or("");
+        if (const auto sectors = procfs::readUnsigned(blockPath / "size"))
+        {
+            disk.capacityBytes = *sectors * kBytesPerSector;
+        }
+        if (const auto stat = readStat(blockPath))
+        {
+            disk.busyTime = std::chrono::duration<double, std::milli>(static_cast<double>(stat->ioTicksMs));
+            disk.bytesRead = stat->sectorsRead * kBytesPerSector;
+            disk.bytesWritten = stat->sectorsWritten * kBytesPerSector;
+        }
+        disks.push_back(std::move(disk));
     }
     return disks;
 }

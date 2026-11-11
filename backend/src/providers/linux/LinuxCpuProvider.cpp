@@ -228,6 +228,29 @@ void readCaches(CpuStaticInfo& info)
 }
 
 /**
+ * @brief Convert the columns of a "cpu" / "cpuN" line of /proc/stat to CPU times.
+ * @param columns Columns after the label (at least kStatColumnCount).
+ * @param secondsPerTick Length of one clock tick.
+ * @return Times split into user, kernel, softirq (dpc), irq (interrupt) and idle.
+ */
+CpuTimes toCpuTimes(const std::vector<std::string_view>& columns, double secondsPerTick)
+{
+    const auto seconds = [&](std::size_t column) {
+        return CpuTimes::Duration(static_cast<double>(procfs::parseUnsigned(columns[column]).value_or(0))
+                                  * secondsPerTick);
+    };
+    return CpuTimes{
+        // Guest time is already included in user/nice by the kernel.
+        .user = seconds(kUser) + seconds(kNice),
+        .kernel = seconds(kSystem),
+        .dpc = seconds(kSoftIrq),
+        .interrupt = seconds(kIrq),
+        // iowait and steal are time this system did not execute anything.
+        .idle = seconds(kIdle) + seconds(kIoWait) + seconds(kSteal),
+    };
+}
+
+/**
  * @brief Find the file that reports the CPU temperature.
  * @return Path of a millidegree file (hwmon temp1_input or thermal_zone temp), or std::nullopt.
  */
@@ -398,21 +421,17 @@ CpuSample LinuxCpuProvider::readSample()
     {
         throw ProviderError("Too few columns in the cpu line of /proc/stat");
     }
-    const auto seconds = [&](std::size_t column) {
-        return CpuTimes::Duration(static_cast<double>(procfs::parseUnsigned(columns[column]).value_or(0))
-                                  * m_secondsPerTick);
-    };
-
     CpuSample sample;
-    sample.times = CpuTimes{
-        // Guest time is already included in user/nice by the kernel.
-        .user = seconds(kUser) + seconds(kNice),
-        .kernel = seconds(kSystem),
-        .dpc = seconds(kSoftIrq),
-        .interrupt = seconds(kIrq),
-        // iowait and steal are time this system did not execute anything.
-        .idle = seconds(kIdle) + seconds(kIoWait) + seconds(kSteal),
-    };
+    sample.times = toCpuTimes(columns, m_secondsPerTick);
+    // The per-processor lines ("cpu0 ...", "cpu1 ...") follow the aggregate line.
+    for (std::size_t index = 1; index < lines.size() && lines[index].starts_with("cpu"); ++index)
+    {
+        const auto coreColumns = procfs::splitWhitespace(lines[index]);
+        if (coreColumns.size() > kStatColumnCount)
+        {
+            sample.perCore.push_back(toCpuTimes({coreColumns.begin() + 1, coreColumns.end()}, m_secondsPerTick));
+        }
+    }
     sample.activity = CpuActivityCounters{
         .contextSwitches = readStatCounter(lines, "ctxt "),
         .interrupts = readStatCounter(lines, "intr "),

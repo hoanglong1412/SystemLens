@@ -19,6 +19,10 @@ struct ProcessSample
     std::string name;                        ///< Image name, e.g. "msedge.exe", "bash".
     std::chrono::duration<double> cpuTime{}; ///< Cumulative user + kernel time.
     std::uint64_t memoryBytes = 0;           ///< Windows: private working set; Linux: resident set size.
+    std::string userName;                    ///< Owner; empty when it cannot be read.
+    std::uint32_t threadCount = 0;
+    std::string status;                      ///< e.g. "Running", "Sleeping"; empty when the OS has no such notion.
+    std::string commandLine;                 ///< Empty when not readable.
 };
 
 class IProcessProvider

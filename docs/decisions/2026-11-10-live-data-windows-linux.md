@@ -104,9 +104,33 @@ loại, để user review sau. Mỗi quyết định có ID `D-NN`.
 | D-41 | Không tạo pull request (chưa được yêu cầu). |
 | D-42 | Dependency `FetchContent` (cpp-httplib, nlohmann/json) không tải được qua proxy của container nên khi kiểm chứng AI dùng bản clone cùng version qua `FETCHCONTENT_SOURCE_DIR_*`; `CMakeLists.txt` không đổi cách tải. |
 
+## 9. Pha 2 — các màn hình còn lại (2026-11-11)
+
+User yêu cầu: "tự thiết kế và code tiếp cho tất cả màn hình còn lại". AI tự quyết định như pha 1.
+
+| ID | Quyết định | Lý do |
+|---|---|---|
+| D-43 | "Màn hình còn lại" = 6 tab (Processes, App history, Startup, Users, Details, Services) + trong Performance: panel Memory, Disk, Ethernet / Wi-Fi, GPU và sub-tab CPU "Per-core". Không làm: "Export snapshot", đổi theme, "Desktop Monitor", nút toggle Hello (giữ nguyên như D-03). | Đó là mọi phần còn lại hiển thị dữ liệu; 3 nút kia là hành động, không phải màn hình. |
+| D-44 | Bấm tab trên thanh tab → chuyển màn hình. Mỗi màn hình chỉ poll API khi đang hiển thị (dừng khi bị ẩn); shell luôn poll overview mỗi giây. | Tránh gọi API nặng (danh sách process) khi người dùng không xem. |
+| D-45 | Chỉ đọc: không kết thúc process, không bật/tắt startup item, không start/stop service. | Hành động phá huỷ / cần quyền admin, ngoài yêu cầu "hiển thị". |
+| D-46 | **Processes** = gom theo tên process (dòng nhóm bung/thu được, tổng CPU + bộ nhớ). **Details** = bảng phẳng từng process, nhiều cột hơn (PID, tên, trạng thái, user, CPU %, CPU time, bộ nhớ, thread, PID cha, command line), sắp xếp theo cột và lọc theo chữ. | Hai tab có hai cách xem khác nhau, giống Task Manager. |
+| D-47 | **App history** = tích luỹ trong RAM kể từ lúc backend khởi động (CPU time, bộ nhớ đỉnh, số instance, bộ nhớ hiện tại theo tên process). Không lưu ra đĩa, không có cột mạng. | Không có nguồn dữ liệu lịch sử chung cho Windows và Linux; lưu đĩa là thêm tính năng. |
+| D-48 | Trạng thái process: Linux lấy từ `/proc/<pid>/stat`; Windows không có → `null` → `—`. Command line: chỉ Linux; Windows `null` (cần đọc PEB của process khác). | Không bịa dữ liệu (D-12). |
+| D-49 | **Services**: Windows dùng Service Control Manager (tên, display name, trạng thái, kiểu khởi động, PID); Linux gọi `systemctl` (tham số cố định, qua `popen`) để lấy trạng thái + kiểu khởi động (không có PID). Máy không dùng systemd → `available=false` kèm lý do, UI hiện banner. | Không có API systemd không phụ thuộc thư viện ngoài. |
+| D-50 | **Startup**: Windows đọc các khoá registry `...\\Run` (HKCU, HKLM, WOW6432Node) và thư mục Startup, trạng thái bật/tắt theo `StartupApproved`; Linux đọc file `.desktop` trong `~/.config/autostart` và `/etc/xdg/autostart` (bản của user che bản hệ thống cùng tên). | Chính là nơi Task Manager đọc. |
+| D-51 | **Users**: phiên đăng nhập từ WTS (Windows) / utmp (Linux); utmp rỗng (container, server không GUI) → thêm một dòng cho user đang chạy backend. Bảng "mức dùng theo user" gom từ danh sách process theo chủ sở hữu (Windows: process không đọc được token → nhóm `(unknown)`). | Dữ liệu thật; dòng dự phòng ghi rõ trong docs. |
+| D-52 | Endpoint inventory (services, startup, users) trả `200` với `available=false` + `reason` khi nền tảng không hỗ trợ (macOS, không có systemd), thay vì `500`. | Đây là trạng thái bình thường, không phải lỗi hệ thống. |
+| D-53 | Tần suất poll: panel Performance 1 s; Processes / Details / App history 2 s (payload lớn); Services / Startup / Users 5 s. | Cân bằng độ mới và tải. |
+| D-54 | Panel Memory / Disk / Network / GPU dùng chung một view "resource detail" (tiêu đề, biểu đồ, thẻ thống kê, bảng tuỳ chọn) cấu hình bằng model riêng cho từng loại. | Một view, bốn model: ít code, cùng giao diện. |
+| D-55 | Thêm 3 provider interface: `ISystemServiceProvider` (không đặt `IServiceProvider` vì trùng kiểu COM của Windows), `IStartupProvider`, `IUserSessionProvider`; mở rộng struct của provider CPU / memory / disk / network / GPU / process. Các provider này không giữ trạng thái và được gọi trực tiếp từ luồng request (không qua sampler), trừ process/CPU/disk/network/GPU vẫn qua `MetricsCollector`. | Danh sách service/startup/user thay đổi chậm, không cần lịch sử. |
+| D-56 | Memory: thêm available, cached, committed, commit limit (cả hai hệ điều hành); không tách swap / page file. Disk: model, dung lượng, tốc độ đọc / ghi. Network: mô tả adapter, MAC, tốc độ liên kết. GPU: tổng bộ nhớ, bộ nhớ đã dùng (chỉ Linux amdgpu). | Phần tương đương chung của hai hệ điều hành. |
+| D-57 | Sắp xếp và lọc làm ở frontend; backend trả nguyên danh sách. | Đơn giản, danh sách chỉ vài trăm dòng. |
+| D-58 | Biểu đồ đọc/ghi của Disk và gửi/nhận của Network gửi **số thô** theo đơn vị thật (bytes/s, bit/s); frontend tự co giãn theo đỉnh trong 60 s. | Đúng D-14 và D-23. |
+| D-59 | Không thêm tooling; Windows vẫn chỉ biên dịch chéo bằng MinGW-w64 (D-38/D-39). | Như pha 1. |
+
 ## 8. Việc để lại
 
-- Implement provider macOS.
+- Implement provider macOS (nay gồm cả 3 provider mới ở pha 2).
 - Chạy thử trên Windows thật (đặc biệt: PDH counter, GPU, disk IOCTL) và build bằng MSVC 2019.
 - Nhiệt độ GPU trên Windows; số service trên Linux; syscall/giây trên Linux.
 - Unit test cho `MetricsCollector` và 2 service với provider giả.

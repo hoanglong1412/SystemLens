@@ -22,6 +22,7 @@ private:
     struct Adapter
     {
         std::string model;
+        std::uint64_t dedicatedMemoryBytes = 0; ///< Video memory of the adapter; 0 for integrated GPUs.
         std::uint64_t luid = 0; ///< Locally unique id that the GPU Engine counter instances carry.
     };
 

@@ -16,6 +16,7 @@
 #include "api/HttpServer.h"
 #include "api/IController.h"
 #include "app/AppConfig.h"
+#include "providers/PlatformProviders.h"
 #include "services/monitoring/MetricsCollector.h"
 
 #include <memory>
@@ -40,6 +41,7 @@ private:
 
     AppConfig m_config;
     // Declared before m_server so they are destroyed after it: the server's handlers point into them.
+    providers::PlatformProviders m_providers;
     std::shared_ptr<services::monitoring::MetricsCollector> m_metrics;
     std::vector<std::unique_ptr<api::IController>> m_controllers;
     api::HttpServer m_server;

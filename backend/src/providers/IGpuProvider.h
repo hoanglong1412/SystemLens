@@ -4,6 +4,7 @@
  */
 #pragma once
 
+#include <cstdint>
 #include <optional>
 #include <string>
 #include <vector>
@@ -18,6 +19,8 @@ struct GpuSample
     std::string model; ///< Adapter model, e.g. "Intel(R) UHD Graphics 630".
     std::optional<double> utilizationPercent; ///< 0..100; nullopt when the driver does not report it.
     std::optional<double> temperatureCelsius;
+    std::optional<std::uint64_t> memoryTotalBytes;
+    std::optional<std::uint64_t> memoryUsedBytes; ///< Only where the driver reports it.
 };
 
 class IGpuProvider

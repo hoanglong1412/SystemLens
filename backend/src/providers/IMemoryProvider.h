@@ -5,6 +5,7 @@
 #pragma once
 
 #include <cstdint>
+#include <optional>
 
 namespace systemlens::providers {
 
@@ -13,6 +14,10 @@ struct MemoryUsage
 {
     std::uint64_t totalBytes = 0;
     std::uint64_t usedBytes = 0; ///< total - available.
+    std::uint64_t availableBytes = 0;
+    std::optional<std::uint64_t> cachedBytes;     ///< Windows: system cache; Linux: Cached + Buffers.
+    std::optional<std::uint64_t> committedBytes;  ///< Windows: CommitTotal; Linux: Committed_AS.
+    std::optional<std::uint64_t> commitLimitBytes;
 };
 
 class IMemoryProvider

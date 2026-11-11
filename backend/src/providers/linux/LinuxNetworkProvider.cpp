@@ -16,6 +16,7 @@ namespace {
 constexpr const char* kNetDir = "/sys/class/net";
 /** ARPHRD_ETHER: Ethernet-framed interfaces (wired and Wi-Fi); loopback is 772. */
 constexpr std::uint64_t kArpHardwareEthernet = 1;
+constexpr double kBitsPerMegabit = 1'000'000.0;
 
 /** An interface found in /sys/class/net. */
 struct Candidate
@@ -46,6 +47,18 @@ std::vector<Candidate> listCandidates()
     return candidates;
 }
 
+/**
+ * @brief Name the kernel driver of an interface (target of the device/driver symlink).
+ * @param interfacePath /sys/class/net/<name>.
+ * @return Driver name such as "virtio_net" or "e1000e"; empty when the interface has no device.
+ */
+std::string readDriverName(const std::filesystem::path& interfacePath)
+{
+    std::error_code error;
+    const auto driver = std::filesystem::read_symlink(interfacePath / "device" / "driver", error);
+    return error ? std::string() : driver.filename().string();
+}
+
 } // namespace
 
 /**
@@ -71,13 +84,22 @@ std::vector<NetworkSample> LinuxNetworkProvider::readInterfaces()
         std::error_code error;
         const bool isWifi = std::filesystem::exists(path / "wireless", error)
                             || std::filesystem::exists(path / "phy80211", error);
-        interfaces.push_back(NetworkSample{
+        NetworkSample sample{
             .id = "net-" + candidate.name,
             .name = candidate.name,
             .kind = isWifi ? NetworkKind::Wifi : NetworkKind::Ethernet,
+            .description = readDriverName(path),
+            .macAddress = procfs::readTrimmed(path / "address").value_or(""),
+            .linkSpeedBitsPerSecond = std::nullopt,
             .bytesSent = procfs::readUnsigned(path / "statistics" / "tx_bytes").value_or(0),
             .bytesReceived = procfs::readUnsigned(path / "statistics" / "rx_bytes").value_or(0),
-        });
+        };
+        // "speed" holds megabits per second, or -1 / is unreadable when the link has no speed (Wi-Fi, virtual).
+        if (const auto megabits = procfs::readUnsigned(path / "speed"))
+        {
+            sample.linkSpeedBitsPerSecond = static_cast<double>(*megabits) * kBitsPerMegabit;
+        }
+        interfaces.push_back(std::move(sample));
     }
     return interfaces;
 }

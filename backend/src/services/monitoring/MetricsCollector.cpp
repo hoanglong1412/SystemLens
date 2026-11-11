@@ -52,6 +52,20 @@ std::optional<double> toRate(const std::optional<std::uint64_t>& previous,
     return static_cast<double>(*current - *previous) / elapsed.count();
 }
 
+/**
+ * @brief CPU usage between two readings of cumulative CPU times.
+ * @param before Earlier reading.
+ * @param now    Later reading.
+ * @return 100 - idle share, in 0..100; 0 when no time was recorded between the readings.
+ */
+double usageBetween(const providers::CpuTimes& before, const providers::CpuTimes& now)
+{
+    const double idle = (now.idle - before.idle).count();
+    const double total = idle + (now.user - before.user).count() + (now.kernel - before.kernel).count()
+                         + (now.dpc - before.dpc).count() + (now.interrupt - before.interrupt).count();
+    return total > 0.0 ? kMaxPercent - toPercent(idle, total) : 0.0;
+}
+
 } // namespace
 
 /**
@@ -255,6 +269,26 @@ void MetricsCollector::sampleCpu(const providers::CpuSample& current, Seconds el
         cpu.dpcsPerSecond = toRate(previous.dpcs, current.activity.dpcs, elapsed);
     }
 
+    // Per-core usage needs the same number of cores in both readings (it changes only with CPU hot-plug).
+    cpu.coreUsagePercent.assign(current.perCore.size(), 0.0);
+    if (m_previous && m_previous->cpu.perCore.size() == current.perCore.size())
+    {
+        for (std::size_t core = 0; core < current.perCore.size(); ++core)
+        {
+            cpu.coreUsagePercent[core] = usageBetween(m_previous->cpu.perCore[core], current.perCore[core]);
+        }
+    }
+    if (m_coreHistories.size() != current.perCore.size())
+    {
+        m_coreHistories.assign(current.perCore.size(), History<double>(kHistoryCapacity));
+    }
+    cpu.coreUsageHistory.reserve(m_coreHistories.size());
+    for (std::size_t core = 0; core < m_coreHistories.size(); ++core)
+    {
+        m_coreHistories[core].push(cpu.coreUsagePercent[core]);
+        cpu.coreUsageHistory.push_back(m_coreHistories[core].toVector());
+    }
+
     cpu.frequencyMhz = current.frequencyMhz;
     cpu.temperatureCelsius = current.temperatureCelsius;
     if (cpu.frequencyMhz)
@@ -289,13 +323,17 @@ void MetricsCollector::sampleMemory(MetricsSnapshot& snapshot)
     MemoryMetrics& memory = snapshot.memory;
     memory.totalBytes = usage.totalBytes;
     memory.usedBytes = usage.usedBytes;
+    memory.availableBytes = usage.availableBytes;
+    memory.cachedBytes = usage.cachedBytes;
+    memory.committedBytes = usage.committedBytes;
+    memory.commitLimitBytes = usage.commitLimitBytes;
     memory.usedPercent = toPercent(static_cast<double>(usage.usedBytes), static_cast<double>(usage.totalBytes));
     m_memoryHistory.push(memory.usedPercent);
     memory.usedPercentHistory = m_memoryHistory.toVector();
 }
 
 /**
- * @brief Compute the active time of every disk.
+ * @brief Compute the active time and the read / write rates of every disk.
  * @param elapsed  Time since the previous tick.
  * @param snapshot Receives snapshot.disks.
  */
@@ -306,7 +344,9 @@ void MetricsCollector::sampleDisks(Seconds elapsed, MetricsSnapshot& snapshot)
         DiskMetrics metrics;
         metrics.id = disk.id;
         metrics.name = std::move(disk.name);
+        metrics.model = std::move(disk.model);
         metrics.kind = disk.kind;
+        metrics.capacityBytes = disk.capacityBytes;
         if (disk.busyTime)
         {
             m_current.diskBusyTimes.emplace(disk.id, *disk.busyTime);
@@ -319,9 +359,28 @@ void MetricsCollector::sampleDisks(Seconds elapsed, MetricsSnapshot& snapshot)
                 }
             }
         }
-        History<double>& history = historyFor(disk.id);
-        history.push(metrics.activePercent.value_or(0.0));
-        metrics.activePercentHistory = history.toVector();
+        if (disk.bytesRead && disk.bytesWritten)
+        {
+            m_current.diskIo.emplace(disk.id, DiskIo{*disk.bytesRead, *disk.bytesWritten});
+            if (m_previous)
+            {
+                const auto before = m_previous->diskIo.find(disk.id);
+                if (before != m_previous->diskIo.end())
+                {
+                    metrics.readBytesPerSecond = toRate(before->second.bytesRead, disk.bytesRead, elapsed);
+                    metrics.writeBytesPerSecond = toRate(before->second.bytesWritten, disk.bytesWritten, elapsed);
+                }
+            }
+        }
+        History<double>& active = historyFor(disk.id);
+        active.push(metrics.activePercent.value_or(0.0));
+        metrics.activePercentHistory = active.toVector();
+        History<double>& reads = historyFor(disk.id + "/read");
+        reads.push(metrics.readBytesPerSecond.value_or(0.0));
+        metrics.readHistory = reads.toVector();
+        History<double>& writes = historyFor(disk.id + "/write");
+        writes.push(metrics.writeBytesPerSecond.value_or(0.0));
+        metrics.writeHistory = writes.toVector();
         snapshot.disks.push_back(std::move(metrics));
     }
 }
@@ -338,7 +397,10 @@ void MetricsCollector::sampleNetworks(Seconds elapsed, MetricsSnapshot& snapshot
         NetworkMetrics metrics;
         metrics.id = adapter.id;
         metrics.name = adapter.name;
+        metrics.description = adapter.description;
+        metrics.macAddress = adapter.macAddress;
         metrics.kind = adapter.kind;
+        metrics.linkSpeedBitsPerSecond = adapter.linkSpeedBitsPerSecond;
         if (m_previous)
         {
             const auto before = m_previous->networks.find(adapter.id);
@@ -351,9 +413,15 @@ void MetricsCollector::sampleNetworks(Seconds elapsed, MetricsSnapshot& snapshot
                 metrics.receiveBitsPerSecond = bitRate(before->second.bytesReceived, adapter.bytesReceived);
             }
         }
-        History<double>& history = historyFor(adapter.id);
-        history.push(metrics.sendBitsPerSecond + metrics.receiveBitsPerSecond);
-        metrics.throughputHistory = history.toVector();
+        History<double>& total = historyFor(adapter.id);
+        total.push(metrics.sendBitsPerSecond + metrics.receiveBitsPerSecond);
+        metrics.throughputHistory = total.toVector();
+        History<double>& sent = historyFor(adapter.id + "/send");
+        sent.push(metrics.sendBitsPerSecond);
+        metrics.sendHistory = sent.toVector();
+        History<double>& received = historyFor(adapter.id + "/receive");
+        received.push(metrics.receiveBitsPerSecond);
+        metrics.receiveHistory = received.toVector();
         snapshot.networks.push_back(std::move(metrics));
         std::string id = adapter.id;
         m_current.networks.emplace(std::move(id), std::move(adapter));
@@ -374,6 +442,8 @@ void MetricsCollector::sampleGpus(MetricsSnapshot& snapshot)
         metrics.model = std::move(gpu.model);
         metrics.utilizationPercent = gpu.utilizationPercent;
         metrics.temperatureCelsius = gpu.temperatureCelsius;
+        metrics.memoryTotalBytes = gpu.memoryTotalBytes;
+        metrics.memoryUsedBytes = gpu.memoryUsedBytes;
         History<double>& history = historyFor(metrics.id);
         history.push(metrics.utilizationPercent.value_or(0.0));
         metrics.utilizationHistory = history.toVector();
@@ -382,13 +452,13 @@ void MetricsCollector::sampleGpus(MetricsSnapshot& snapshot)
 }
 
 /**
- * @brief Compute per-process CPU usage and pick the top lists.
+ * @brief Compute per-process CPU usage, the process lists and the per-application totals.
  * @param elapsed  Time since the previous tick.
- * @param snapshot Receives topCpuProcesses and topMemoryProcess.
+ * @param snapshot Receives processes, topCpuProcesses, topMemoryProcess and appHistory.
  */
 void MetricsCollector::sampleProcesses(Seconds elapsed, MetricsSnapshot& snapshot)
 {
-    const std::vector<providers::ProcessSample> processes = m_providers.process->readProcesses();
+    std::vector<providers::ProcessSample> processes = m_providers.process->readProcesses();
     const std::uint32_t selfPid = m_providers.process->currentProcessId();
     const auto self = std::ranges::find(processes, selfPid, &providers::ProcessSample::pid);
     // The parent is the SystemLens UI when it started us. An orphaned backend is re-parented to
@@ -399,44 +469,84 @@ void MetricsCollector::sampleProcesses(Seconds elapsed, MetricsSnapshot& snapsho
     // CPU time is summed over all processors, so 100% means every logical processor fully busy.
     const double capacity = elapsed.count() * std::max<std::uint32_t>(snapshot.cpuInfo.logicalProcessors, 1);
 
-    std::vector<ProcessMetrics> all;
+    // Instance counts and memory are "now" values: reset them before the processes are counted again.
+    for (auto& [name, app] : m_apps)
+    {
+        app.runningInstances = 0;
+        app.memoryBytes = 0;
+    }
+
+    std::vector<ProcessMetrics>& all = snapshot.processes;
     all.reserve(processes.size());
     m_current.processCpuTimes.reserve(processes.size());
-    for (const providers::ProcessSample& process : processes)
+    for (providers::ProcessSample& process : processes)
     {
         m_current.processCpuTimes.emplace(process.pid, process.cpuTime);
-        ProcessMetrics metrics{
-            .pid = process.pid,
-            .name = process.name,
-            .cpuPercent = 0.0,
-            .memoryBytes = process.memoryBytes,
-            .isSelf = process.pid == selfPid || (parentPid && process.pid == *parentPid),
-        };
+        ProcessMetrics metrics;
+        metrics.pid = process.pid;
+        metrics.parentPid = process.parentPid;
+        metrics.cpuTimeSeconds = process.cpuTime.count();
+        metrics.memoryBytes = process.memoryBytes;
+        metrics.threadCount = process.threadCount;
+        metrics.isSelf = process.pid == selfPid || (parentPid && process.pid == *parentPid);
+
+        AppAccumulator& app = m_apps[process.name];
+        ++app.runningInstances;
+        app.memoryBytes += process.memoryBytes;
         if (m_previous)
         {
             // A PID missing from the previous tick is a new process: no baseline, so 0 for now.
             const auto before = m_previous->processCpuTimes.find(process.pid);
             if (before != m_previous->processCpuTimes.end())
             {
-                metrics.cpuPercent = toPercent((process.cpuTime - before->second).count(), capacity);
+                const double delta = (process.cpuTime - before->second).count();
+                metrics.cpuPercent = toPercent(delta, capacity);
+                // A negative delta means the PID was reused by another process; ignore it.
+                app.cpuTimeSeconds += std::max(delta, 0.0);
             }
         }
+
+        metrics.name = std::move(process.name);
+        metrics.userName = std::move(process.userName);
+        metrics.status = std::move(process.status);
+        metrics.commandLine = std::move(process.commandLine);
         all.push_back(std::move(metrics));
     }
-
-    if (all.empty())
+    for (auto& [name, app] : m_apps)
     {
-        return;
+        app.peakMemoryBytes = std::max(app.peakMemoryBytes, app.memoryBytes);
     }
-    snapshot.topMemoryProcess = *std::ranges::max_element(all, {}, &ProcessMetrics::memoryBytes);
 
-    const auto topCount = static_cast<std::ptrdiff_t>(std::min(kTopProcessCount, all.size()));
-    // Ties (typically many processes at 0%) are ordered by memory so the table does not shuffle.
-    std::ranges::partial_sort(all, all.begin() + topCount, [](const ProcessMetrics& a, const ProcessMetrics& b) {
-        return a.cpuPercent != b.cpuPercent ? a.cpuPercent > b.cpuPercent : a.memoryBytes > b.memoryBytes;
+    if (!all.empty())
+    {
+        snapshot.topMemoryProcess = *std::ranges::max_element(all, {}, &ProcessMetrics::memoryBytes);
+        // Ties (typically many processes at 0%) are ordered by memory so the table does not shuffle.
+        std::ranges::sort(all, [](const ProcessMetrics& a, const ProcessMetrics& b) {
+            return a.cpuPercent != b.cpuPercent ? a.cpuPercent > b.cpuPercent : a.memoryBytes > b.memoryBytes;
+        });
+        const auto topCount = static_cast<std::ptrdiff_t>(std::min(kTopProcessCount, all.size()));
+        snapshot.topCpuProcesses.assign(all.begin(), all.begin() + topCount);
+    }
+
+    snapshot.appHistorySince = m_appsSince;
+    snapshot.appHistory.reserve(m_apps.size());
+    for (const auto& [name, app] : m_apps)
+    {
+        snapshot.appHistory.push_back(AppUsage{
+            .name = name,
+            .cpuTimeSeconds = app.cpuTimeSeconds,
+            .peakMemoryBytes = app.peakMemoryBytes,
+            .memoryBytes = app.memoryBytes,
+            .runningInstances = app.runningInstances,
+        });
+    }
+    std::ranges::sort(snapshot.appHistory, [](const AppUsage& a, const AppUsage& b) {
+        return a.cpuTimeSeconds != b.cpuTimeSeconds ? a.cpuTimeSeconds > b.cpuTimeSeconds : a.name < b.name;
     });
-    all.resize(static_cast<std::size_t>(topCount));
-    snapshot.topCpuProcesses = std::move(all);
+    if (snapshot.appHistory.size() > kAppHistoryLimit)
+    {
+        snapshot.appHistory.resize(kAppHistoryLimit);
+    }
 }
 
 /**

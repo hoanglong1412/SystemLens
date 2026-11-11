@@ -19,6 +19,34 @@ Mẫu entry:
 - AI: đề xuất / kết quả / vấn đề phát hiện
 -->
 
+## 2026-11-11 — Backend cho các màn hình còn lại: provider mới, 10 endpoint, lịch sử ứng dụng
+
+**Lý do:** User yêu cầu "tự thiết kế và code tiếp cho tất cả màn hình còn lại" (Processes, App history, Startup,
+Users, Details, Services, các panel Memory / Disk / Network / GPU và CPU Per-core). Commit này là phần backend và
+hợp đồng API; frontend ở commit sau. Theo quy tắc "spec first": quyết định (D-43…D-59) và `api/openapi.yaml` được viết
+trước khi code; user đã cho phép AI tự quyết định nên không có bước chờ review.
+
+**Nội dung:**
+- `docs/decisions/…`: mục 9 — quyết định D-43…D-59 của pha 2.
+- `api/openapi.yaml` 0.3.0: thêm `getCpuCores`, `getMemoryPerformance`, `getDiskPerformance`, `getNetworkPerformance`,
+  `getGpuPerformance`, `getProcesses`, `getAppHistory`, `getServices`, `getStartupItems`, `getUsers`.
+- Provider: mở rộng CPU (per-core), memory (cached / commit), disk (model, dung lượng, I/O), network (mô tả, MAC, tốc độ),
+  GPU (bộ nhớ), process (owner, thread, status, command line); thêm `ISystemServiceProvider`, `IStartupProvider`,
+  `IUserSessionProvider` cho Linux, Windows và macOS (stub).
+- `MetricsCollector`: lịch sử từng core, tốc độ đọc / ghi disk, lịch sử gửi / nhận mạng, danh sách đầy đủ process,
+  tích luỹ theo ứng dụng kể từ lúc backend chạy.
+- Service + controller mới: `PerformanceDetail*`, `ProcessList*`/`ProcessController`, `SystemInventory*`/`InventoryController`.
+- `docs/design/lld/LLD-06-detail-and-inventory.md` (mới).
+
+**Kiểm chứng:** Linux build không cảnh báo, gọi cả 10 endpoint đều trả dữ liệu thật (services trả `available=false` vì
+container không có systemd). Windows chỉ biên dịch chéo + link bằng MinGW-w64, chưa chạy thật. macOS chưa biên dịch.
+
+**Trao đổi user ↔ AI:**
+- User: tự thiết kế và code tiếp cho tất cả màn hình còn lại.
+- AI: chốt phạm vi và 17 quyết định mới (chỉ đọc, không kết thúc process / tắt startup / dừng service; Processes gom
+  nhóm còn Details phẳng; App history tích luỹ trong RAM; inventory trả `available=false` thay vì lỗi).
+- AI: file tài liệu còn lại (FR, api-schema, README, LLD-07) cập nhật cùng commit frontend.
+
 ## 2026-11-11 — UI hiển thị dữ liệu thật: provider Windows, frontend live, tài liệu
 
 **Lý do:** Hoàn thành yêu cầu "UI hiện tại hiển thị đúng data trên Windows và Linux" (tiếp nối commit WIP bên dưới).

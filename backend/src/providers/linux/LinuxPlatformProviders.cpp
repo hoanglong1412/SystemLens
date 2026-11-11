@@ -10,6 +10,9 @@
 #include "providers/linux/LinuxMemoryProvider.h"
 #include "providers/linux/LinuxNetworkProvider.h"
 #include "providers/linux/LinuxProcessProvider.h"
+#include "providers/linux/LinuxServiceProvider.h"
+#include "providers/linux/LinuxStartupProvider.h"
+#include "providers/linux/LinuxUserSessionProvider.h"
 #include "providers/linux/LinuxSystemInfoProvider.h"
 
 namespace systemlens::providers {
@@ -29,6 +32,9 @@ PlatformProviders createPlatformProviders()
         .network = std::make_shared<linux_os::LinuxNetworkProvider>(),
         .gpu = std::make_shared<linux_os::LinuxGpuProvider>(),
         .process = std::make_shared<linux_os::LinuxProcessProvider>(),
+        .services = std::make_shared<linux_os::LinuxServiceProvider>(),
+        .startup = std::make_shared<linux_os::LinuxStartupProvider>(),
+        .sessions = std::make_shared<linux_os::LinuxUserSessionProvider>(),
     };
 }
 
